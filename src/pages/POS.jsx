@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import CustomerForm from '../components/CustomerForm';
 import PayForm from '../components/PayForm';
+import Receipt from "../components/Receipt";
 const customers = [
   { id: 'walk-in', name: 'Walk-in Customer' },
   { id: 'cust-001', name: 'John Smith (VIP)', phone: '555-1234' },
@@ -34,6 +35,7 @@ export default function POS() {
   const [isOpen, setIsOpen] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [showPayForm, setShowPayForm] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
   const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const discount = 5.00;
   const tax = subtotal * 0.08;
@@ -343,18 +345,34 @@ export default function POS() {
           
         />
       )}
-      {showPayForm && (
-            <PayForm 
-              isOpen={showPayForm}
-              onClose={() => setShowPayForm(false)}
-              total={total}
-              onPaySubmit={(paymentData) => {
-                // Handle payment submission
-                console.log('Payment data:', paymentData);
-                // Process payment, save to database, etc.
-              }}
-            />
-          )}
+
+          {showPayForm && (
+          <PayForm 
+            isOpen={showPayForm}
+            onClose={() => setShowPayForm(false)}
+            total={total}
+            onPaySubmit={(paymentData) => {
+              console.log('Payment data:', paymentData);
+              setShowPayForm(false); // Close payment form
+              setShowReceipt(true);  // Show receipt
+            }}
+          />
+        )}
+        {showReceipt && (
+          <Receipt
+          isOpen={showReceipt}
+          onClose={() => setShowReceipt(false)}
+          customerName={
+            customersList.find(c => c.id === selectedCustomer)?.name
+          }
+          customerId={selectedCustomer}
+          orderItems={orderItems}
+          subtotal={subtotal}
+          discount={discount}
+          tax={tax}
+          total={total}
+        />
+        )}
     </div>
   );
 }

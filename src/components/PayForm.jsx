@@ -29,16 +29,24 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
   }, [isOpen, total]);
   
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+  const { name, value } = e.target;
+
+  setFormData(prev => {
+    // start with the updated field
+    const next = { ...prev, [name]: value };
+
+    // if they just changed the receivedAmount, recalc change
     if (name === 'receivedAmount') {
       const received = parseFloat(value) || 0;
-      const paying = parseFloat(prev.payingAmount) || 0;
-      const change = (received - paying).toFixed(2);
-      setFormData(prev => ({ ...prev, change: Math.max(0, change).toFixed(2) }));
+      const paying  = parseFloat(prev.payingAmount) || 0;
+      const rawDiff = received - paying;
+      next.change     = (rawDiff > 0 ? rawDiff : 0).toFixed(2);
     }
-  };
+
+    return next;
+  });
+};
+
   
   const handlePaymentTypeChange = (e) => {
     const type = e.target.value;
