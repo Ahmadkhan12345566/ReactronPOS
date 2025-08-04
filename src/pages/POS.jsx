@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { TrashIcon } from '@heroicons/react/24/outline';const customers = [
+import { TrashIcon } from '@heroicons/react/24/outline';
+import CustomerForm from '../components/CustomerForm';
+
+const customers = [
   { id: 'walk-in', name: 'Walk-in Customer' },
   { id: 'cust-001', name: 'John Smith (VIP)', phone: '555-1234' },
   { id: 'cust-002', name: 'Sarah Johnson', phone: '555-5678' },
@@ -23,12 +26,13 @@ const products = [
 ];
 
 export default function POS() {
+  const [customersList, setCustomersList] = useState(customers);
   const [selectedCustomer, setSelectedCustomer] = useState('walk-in');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [orderItems, setOrderItems] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
   const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const discount = 5.00;
   const tax = subtotal * 0.08;
@@ -79,13 +83,13 @@ export default function POS() {
                   value={selectedCustomer}
                   onChange={(e) => setSelectedCustomer(e.target.value)}
                 >
-                  {customers.map((customer) => (
+                  {customersList.map((customer) => (
                     <option key={customer.id} value={customer.id}>
                       {customer.name} {customer.phone ? `(${customer.phone})` : ''}
                     </option>
                   ))}
                 </select>
-                <button className="btn btn-xs bg-black text-white border-0 rounded-lg px-3 py-1">
+                <button onClick={() => setShowCustomerForm(true)} className="btn btn-xs bg-black text-white border-0 rounded-lg px-3 py-1">
                   Add New
                 </button>
               </div>
@@ -228,7 +232,6 @@ export default function POS() {
                 Clear
               </button>
               <button
-                onClick={() => setShowOverlay(true)}
                 className="btn w-full mt-4 bg-black text-white border-0 shadow rounded-xl py-3"
               >
                 Pay
@@ -327,6 +330,16 @@ export default function POS() {
           </div>
         </div>
       </div>
+      {showCustomerForm && (
+        <CustomerForm 
+          isOpen={showCustomerForm}
+          onClose={() => setShowCustomerForm(false)}
+          onAddCustomer={(customer) => {
+            setCustomersList(prev => [...prev, customer]);
+            setSelectedCustomer(customer.id);
+          }}
+        />
+      )}
     </div>
   );
 }
