@@ -8,6 +8,7 @@ import Purchases from './pages/Purchases';
 import AddPurchase from './pages/AddPurchase';
 import Navbar from './components/NavBar';
 import POS from './pages/POS';
+import AddProduct from './pages/AddProduct';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/product/add" element={<AddProduct />} />
             <Route path="/pos" element={<POS />} />
             <Route path="/sales" element={<Sales />} />
             <Route path="/purchases" element={<Purchases />} />

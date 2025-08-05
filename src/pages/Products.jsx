@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ProductList from '../components/ProductList';
-
+import { NavLink } from 'react-router-dom';
+import ImportProduct from "../components/ImportProduct";
 // Enhanced dummy products with more realistic data
 export const dummyProducts = [
   {
@@ -271,59 +272,8 @@ export default function Products() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <ProductList products={products} />
-      
-      {showForm && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
-            <div className="flex justify-between items-center px-6 py-4 border-b">
-              <h3 className="text-xl font-semibold">Add New Product</h3>
-              <button 
-                onClick={() => setShowForm(false)} 
-                className="text-gray-500 hover:text-gray-800 text-2xl"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="p-6">
-              {/* Form content would go here */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (PKR)</label>
-                  <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                    <option>Food</option>
-                    <option>Hot Drinks</option>
-                    <option>Cold Drinks</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                  <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-3">
-                <button 
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  Save Product
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProductList products={products} setShowForm={setShowForm} />
+      {showForm && <ImportProduct showForm={showForm} setShowForm={setShowForm}/>}
     </div>
   );
 }

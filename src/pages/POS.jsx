@@ -164,10 +164,6 @@ export const products = [
     createdByAvatar: "./src/assets/img/users/user-default.jpg"
   }
 ];
-
-// ————————————————————————
-// Customers (unchanged)
-// ————————————————————————
 export const customers = [
   { id: 'walk-in',   name: 'Walk-in Customer' },
   { id: 'cust-001',  name: 'John Smith (VIP)',    phone: '555-1234' },
@@ -220,10 +216,10 @@ export default function POS() {
   }
 
   return (
-    <div className="overflow-auto flex-1 bg-gray-100 p-4">
-      <div className="mx-auto flex flex-col lg:flex-row gap-6 h-[630px]">
-        {/* Order Section - Left Side */}
-        <div className="w-full lg:w-[27.5%] bg-white rounded-2xl border border-gray-400 shadow-lg flex flex-col">
+    <div className="overflow-auto flex-1 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-950 p-4">
+    <div className="mx-auto flex flex-col lg:flex-row gap-6 h-[630px]">
+      {/* Order Section - Left Side */}
+      <div className="w-full lg:w-[27.5%] bg-white rounded-2xl border border-gray-800 dark:border-gray-600 shadow-lg flex flex-col">
           <div className="p-6 flex flex-col flex-1 overflow-hidden">
             {/* Customer Selection */}
             <div className="mb-6">
@@ -396,7 +392,7 @@ export default function POS() {
         </div>
 
         {/* Products Section - Right Side */}
-        <div className="w-full lg:w-[72.5%] bg-white rounded-2xl border border-gray-400 shadow-lg flex flex-col">
+      <div className="w-full lg:w-[72.5%] bg-white rounded-2xl border border-gray-800 dark:border-gray-600 shadow-lg flex flex-col">
           <div className="p-6 flex flex-col flex-1 overflow-hidden">
             {/* Categories */}
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
