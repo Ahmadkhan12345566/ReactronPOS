@@ -20,6 +20,7 @@
     "@mui/material": "^7.2.0",
     "@mui/x-data-grid": "^8.9.1",
     "@tailwindcss/vite": "^4.1.11",
+    "@tanstack/react-table": "^8.21.3",
     "daisyui": "^5.0.50",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

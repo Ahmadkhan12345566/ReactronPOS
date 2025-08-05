@@ -3,27 +3,177 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import CustomerForm from '../components/CustomerForm';
 import PayForm from '../components/PayForm';
 import Receipt from "../components/Receipt";
-const customers = [
-  { id: 'walk-in', name: 'Walk-in Customer' },
-  { id: 'cust-001', name: 'John Smith (VIP)', phone: '555-1234' },
-  { id: 'cust-002', name: 'Sarah Johnson', phone: '555-5678' },
-  { id: 'cust-003', name: 'Mike Wilson', phone: '555-9012' },
-  { id: 'cust-004', name: 'Emily Davis', phone: '555-3456' },
+// ————————————————————————
+// Products (centralized “dummyProducts”)
+// ————————————————————————
+export const products = [
+  {
+    id:  1,
+    code: "FD001",
+    name: "Beef Burger",
+    category: "food",
+    brand: "CafeCo",
+    price: 7.0,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/beef-burger.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id:  2,
+    code: "FD002",
+    name: "Choco Glaze Donut Peanut",
+    category: "food",
+    brand: "CafeCo",
+    price: 3.25,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/choco-glaze-donut-peanut.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id:  3,
+    code: "FD003",
+    name: "Choco Glaze Donut",
+    category: "food",
+    brand: "CafeCo",
+    price: 2.75,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/choco-glaze-donut.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id:  4,
+    code: "FD004",
+    name: "Cinnamon Roll",
+    category: "food",
+    brand: "CafeCo",
+    price: 3.5,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/cinnamon-roll.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id:  5,
+    code: "FD005",
+    name: "Coffee Latte",
+    category: "hot",
+    brand: "CafeCo",
+    price: 4.0,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/coffee-latte.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id:  6,
+    code: "FD006",
+    name: "Croissant",
+    category: "food",
+    brand: "CafeCo",
+    price: 2.5,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/croissant.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id:  7,
+    code: "FD007",
+    name: "Ice Chocolate",
+    category: "cold",
+    brand: "CafeCo",
+    price: 4.25,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/ice-chocolate.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id:  8,
+    code: "FD008",
+    name: "Ice Tea",
+    category: "cold",
+    brand: "CafeCo",
+    price: 1.99,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/ice-tea.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id:  9,
+    code: "FD009",
+    name: "Matcha Latte",
+    category: "hot",
+    brand: "CafeCo",
+    price: 4.5,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/matcha-latte.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id: 10,
+    code: "FD010",
+    name: "Sandwich",
+    category: "food",
+    brand: "CafeCo",
+    price: 5.5,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/sandwich.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id: 11,
+    code: "FD011",
+    name: "Sawarma",
+    category: "food",
+    brand: "CafeCo",
+    price: 6.75,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/sawarma.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  },
+  {
+    id: 12,
+    code: "FD012",
+    name: "Red Glaze Donut",
+    category: "food",
+    brand: "CafeCo",
+    price: 2.95,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/red-glaze-donut.png",
+    createdBy: "Admin",
+    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+  }
 ];
 
-const products = [
-  { id: 1, name: "Beef Burger", price: 7.0, category: "food", image: "./src/assets/img/beef-burger.png" },
-  { id: 2, name: "Choco Glaze Donut Peanut", price: 3.25, category: "food", image: "./src/assets/img/choco-glaze-donut-peanut.png" },
-  { id: 3, name: "Choco Glaze Donut", price: 2.75, category: "food", image: "./src/assets/img/choco-glaze-donut.png" },
-  { id: 4, name: "Cinnamon Roll", price: 3.5, category: "food", image: "./src/assets/img/cinnamon-roll.png" },
-  { id: 5, name: "Coffee Latte", price: 4.0, category: "hot", image: "./src/assets/img/coffee-latte.png" },
-  { id: 6, name: "Croissant", price: 2.5, category: "food", image: "./src/assets/img/croissant.png" },
-  { id: 7, name: "Ice Chocolate", price: 4.25, category: "cold", image: "./src/assets/img/ice-chocolate.png" },
-  { id: 8, name: "Ice Tea", price: 1.99, category: "cold", image: "./src/assets/img/ice-tea.png" },
-  { id: 9, name: "Matcha Latte", price: 4.5, category: "hot", image: "./src/assets/img/matcha-latte.png" },
-  { id: 10, name: "Sandwich", price: 5.5, category: "food", image: "./src/assets/img/sandwich.png" },
-  { id: 11, name: "Sawarma", price: 6.75, category: "food", image: "./src/assets/img/sawarma.png" },
-  { id: 12, name: "Red Glaze Donut", price: 2.95, category: "food", image: "./src/assets/img/red-glaze-donut.png" },
+// ————————————————————————
+// Customers (unchanged)
+// ————————————————————————
+export const customers = [
+  { id: 'walk-in',   name: 'Walk-in Customer' },
+  { id: 'cust-001',  name: 'John Smith (VIP)',    phone: '555-1234' },
+  { id: 'cust-002',  name: 'Sarah Johnson',        phone: '555-5678' },
+  { id: 'cust-003',  name: 'Mike Wilson',          phone: '555-9012' },
+  { id: 'cust-004',  name: 'Emily Davis',          phone: '555-3456' },
 ];
 
 export default function POS() {

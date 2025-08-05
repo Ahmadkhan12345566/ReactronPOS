@@ -1,97 +1,329 @@
 import React, { useState } from 'react';
-
 import ProductList from '../components/ProductList';
 
-const dummyProducts = [
-  { id: 1, name: "Wireless Mouse", price: 25.99, code: "WM123" },
-  { id: 2, name: "Bluetooth Speaker", price: 45.00, code: "BS456" },
-  { id: 3, name: "Gaming Keyboard", price: 79.99, code: "GK789" },
-  { id: 4, name: "HD Monitor", price: 120.00, code: "HD101" },
-  { id: 5, name: "USB-C Hub", price: 19.50, code: "UC567" },
-  { id: 6, name: "Laptop Stand", price: 32.00, code: "LS908" },
-  { id: 7, name: "External SSD 1TB", price: 99.99, code: "SSD1TB" },
-  { id: 8, name: "Webcam 1080p", price: 40.00, code: "WC1080" },
-  { id: 9, name: "Mechanical Pencil", price: 2.99, code: "MP210" },
-  { id: 10, name: "Noise Cancelling Headphones", price: 199.99, code: "NC900" },
-  { id: 11, name: "Smartphone Tripod", price: 15.99, code: "TP333" },
-  { id: 12, name: "Portable Charger 10000mAh", price: 25.00, code: "PC100" },
-  { id: 13, name: "Wireless Earbuds", price: 55.00, code: "WE455" },
-  { id: 14, name: "Desk Organizer", price: 12.50, code: "DO321" },
-  { id: 15, name: "HDMI Cable 2m", price: 8.99, code: "HDMI2M" },
-  { id: 16, name: "Ergonomic Chair", price: 145.00, code: "EC501" },
-  { id: 17, name: "Smartwatch", price: 130.00, code: "SW650" },
-  { id: 18, name: "Graphic Tablet", price: 88.50, code: "GT852" },
-  { id: 19, name: "Mini Projector", price: 75.00, code: "MPROJ" },
-  { id: 20, name: "LED Desk Lamp", price: 20.00, code: "LDL100" },
-  { id: 21, name: "Wireless Router", price: 60.00, code: "WR300" },
-  { id: 22, name: "Thermal Label Printer", price: 110.00, code: "TLP202" },
-  { id: 23, name: "Smart Light Bulb", price: 10.99, code: "SLB007" },
-  { id: 24, name: "USB Flash Drive 64GB", price: 14.00, code: "USB64" },
-  { id: 25, name: "Laptop Cooling Pad", price: 22.50, code: "LCP250" },
-  { id: 26, name: "Bluetooth Adapter", price: 6.99, code: "BA202" },
-  { id: 27, name: "Wireless Charger", price: 18.00, code: "WC500" },
-  { id: 28, name: "Gaming Mouse Pad", price: 9.99, code: "GMP321" },
-  { id: 29, name: "Soundbar Speaker", price: 79.00, code: "SBAR99" },
-  { id: 30, name: "Office Filing Cabinet", price: 155.00, code: "FC111" },
-  { id: 31, name: "Stylus Pen", price: 11.00, code: "SP222" },
-  { id: 32, name: "Fingerprint Lock", price: 40.00, code: "FPLOCK" },
-  { id: 33, name: "Drone with Camera", price: 250.00, code: "DRONEX" },
-  { id: 34, name: "VR Headset", price: 199.00, code: "VR888" },
-  { id: 35, name: "Mini Fridge", price: 89.00, code: "MF150" },
-  { id: 36, name: "Smart Thermostat", price: 145.00, code: "ST777" },
-  { id: 37, name: "Compact Photo Printer", price: 120.00, code: "CPP999" },
-  { id: 38, name: "Wireless Doorbell", price: 24.99, code: "WDB123" },
-  { id: 39, name: "Digital Alarm Clock", price: 17.50, code: "DAC010" },
-  { id: 40, name: "Fitness Tracker", price: 35.00, code: "FT202" },
-  { id: 41, name: "USB Desk Fan", price: 14.99, code: "UDF300" },
-  { id: 42, name: "LED Strip Lights", price: 22.99, code: "LSL333" },
-  { id: 43, name: "Action Camera", price: 79.99, code: "ACAM123" },
-  { id: 44, name: "Car Phone Holder", price: 10.00, code: "CPH444" },
-  { id: 45, name: "Cable Organizer", price: 7.99, code: "CO101" },
-  { id: 46, name: "Mechanical Stopwatch", price: 13.00, code: "MSW888" },
-  { id: 47, name: "Whiteboard for Office", price: 48.00, code: "WBOFF" },
-  { id: 48, name: "WiFi Repeater", price: 20.00, code: "WIFIEXT" },
-  { id: 49, name: "Foldable Laptop Desk", price: 27.00, code: "FLD333" },
-  { id: 50, name: "Electric Kettle", price: 34.00, code: "EK789" }
+// Enhanced dummy products with more realistic data
+export const dummyProducts = [
+  {
+    id:  1,
+    code: "FD001",
+    name: "Beef Burger",
+    category: "food",
+    brand: "CafeCo",
+    price: 7.0,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/beef-burger.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id:  2,
+    code: "FD002",
+    name: "Choco Glaze Donut Peanut",
+    category: "food",
+    brand: "CafeCo",
+    price: 3.25,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/choco-glaze-donut-peanut.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id:  3,
+    code: "FD003",
+    name: "Choco Glaze Donut",
+    category: "food",
+    brand: "CafeCo",
+    price: 2.75,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/choco-glaze-donut.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id:  4,
+    code: "FD004",
+    name: "Cinnamon Roll",
+    category: "food",
+    brand: "CafeCo",
+    price: 3.5,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/cinnamon-roll.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id:  5,
+    code: "FD005",
+    name: "Coffee Latte",
+    category: "hot",
+    brand: "CafeCo",
+    price: 4.0,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/coffee-latte.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id:  6,
+    code: "FD006",
+    name: "Croissant",
+    category: "food",
+    brand: "CafeCo",
+    price: 2.5,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/croissant.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id:  7,
+    code: "FD007",
+    name: "Ice Chocolate",
+    category: "cold",
+    brand: "CafeCo",
+    price: 4.25,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/ice-chocolate.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id:  8,
+    code: "FD008",
+    name: "Ice Tea",
+    category: "cold",
+    brand: "CafeCo",
+    price: 1.99,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/ice-tea.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id:  9,
+    code: "FD009",
+    name: "Matcha Latte",
+    category: "hot",
+    brand: "CafeCo",
+    price: 4.5,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/matcha-latte.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id: 10,
+    code: "FD010",
+    name: "Sandwich",
+    category: "food",
+    brand: "CafeCo",
+    price: 5.5,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/sandwich.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id: 11,
+    code: "FD011",
+    name: "Sawarma",
+    category: "food",
+    brand: "CafeCo",
+    price: 6.75,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/sawarma.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id: 12,
+    code: "FD012",
+    name: "Red Glaze Donut",
+    category: "food",
+    brand: "CafeCo",
+    price: 2.95,
+    unit: "Pc",
+    qty: 100,
+    image: "./src/assets/img/red-glaze-donut.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
+  },
+  {
+    id: 13,
+    code: "FD013",
+    name: "Cappuccino",
+    category: "hot",
+    brand: "CafeCo",
+    price: 4.25,
+    unit: "Pc",
+    qty: 85,
+    image: "./src/assets/img/cappuccino.png",
+    createdBy: "Manager",
+    createdByAvatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
+  },
+  {
+    id: 14,
+    code: "FD014",
+    name: "Mocha",
+    category: "hot",
+    brand: "CafeCo",
+    price: 4.75,
+    unit: "Pc",
+    qty: 90,
+    image: "./src/assets/img/mocha.png",
+    createdBy: "Manager",
+    createdByAvatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
+  },
+  {
+    id: 15,
+    code: "FD015",
+    name: "Espresso",
+    category: "hot",
+    brand: "CafeCo",
+    price: 3.25,
+    unit: "Pc",
+    qty: 75,
+    image: "./src/assets/img/espresso.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
+  },
+  {
+    id: 16,
+    code: "FD016",
+    name: "Iced Coffee",
+    category: "cold",
+    brand: "CafeCo",
+    price: 4.50,
+    unit: "Pc",
+    qty: 65,
+    image: "./src/assets/img/iced-coffee.png",
+    createdBy: "Barista",
+    createdByAvatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
+  },
+  {
+    id: 17,
+    code: "FD017",
+    name: "Fruit Smoothie",
+    category: "cold",
+    brand: "CafeCo",
+    price: 5.25,
+    unit: "Pc",
+    qty: 55,
+    image: "./src/assets/img/fruit-smoothie.png",
+    createdBy: "Barista",
+    createdByAvatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
+  },
+  {
+    id: 18,
+    code: "FD018",
+    name: "Blueberry Muffin",
+    category: "food",
+    brand: "CafeCo",
+    price: 3.25,
+    unit: "Pc",
+    qty: 45,
+    image: "./src/assets/img/blueberry-muffin.png",
+    createdBy: "Admin",
+    createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
+  },
+  {
+    id: 19,
+    code: "FD019",
+    name: "Chocolate Chip Cookie",
+    category: "food",
+    brand: "CafeCo",
+    price: 2.25,
+    unit: "Pc",
+    qty: 120,
+    image: "./src/assets/img/chocolate-chip-cookie.png",
+    createdBy: "Manager",
+    createdByAvatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
+  },
+  {
+    id: 20,
+    code: "FD020",
+    name: "Bagel with Cream Cheese",
+    category: "food",
+    brand: "CafeCo",
+    price: 3.75,
+    unit: "Pc",
+    qty: 70,
+    image: "./src/assets/img/bagel.png",
+    createdBy: "Barista",
+    createdByAvatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
+  },
 ];
 
-const Products = () => {
+export default function Products() {
+  const [products] = useState(dummyProducts);
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Products</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Add Product
-        </button>
-      </div>
-
-      {/* Product List can go here */}
-      <ProductList products={dummyProducts} />
-
-      {/* Custom Modal */}
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <ProductList products={products} />
+      
       {showForm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
+            <div className="flex justify-between items-center px-6 py-4 border-b">
               <h3 className="text-xl font-semibold">Add New Product</h3>
-              <button
-                className="text-gray-500 hover:text-gray-800"
-                onClick={() => setShowForm(false)}
+              <button 
+                onClick={() => setShowForm(false)} 
+                className="text-gray-500 hover:text-gray-800 text-2xl"
               >
-                ✕
+                &times;
               </button>
             </div>
-          
+            <div className="p-6">
+              {/* Form content would go here */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                  <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (PKR)</label>
+                  <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <option>Food</option>
+                    <option>Hot Drinks</option>
+                    <option>Cold Drinks</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                  <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button 
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Save Product
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default Products;
+}
