@@ -9,6 +9,7 @@ import AddPurchase from './pages/AddPurchase';
 import Navbar from './components/NavBar';
 import POS from './pages/POS';
 import AddProduct from './pages/AddProduct';
+import Categories from './pages/Categories';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <div>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/categories" element={<Categories />} />
             <Route path="/products" element={<Products />} />
             <Route path="/product/add" element={<AddProduct />} />
             <Route path="/pos" element={<POS />} />

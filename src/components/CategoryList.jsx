@@ -8,72 +8,59 @@ import {
   useReactTable
 } from '@tanstack/react-table';
 import { 
-  TrashIcon, 
-  EyeIcon, 
   PencilIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-  ArrowUpIcon,
-  ArrowDownIcon
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import LoopIcon from '@mui/icons-material/Loop';
-import { NavLink } from 'react-router-dom';
+import { ChevronUpIcon } from '@heroicons/react/24/outline';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export default function ProductList({ products, setShowForm }) {
+export default function CategoryList({ categories, setShowForm }) {
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [brandFilter, setBrandFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
-  // Export to Excel function
+    // Export to Excel function
   const exportToExcel = () => {
-    const data = filteredData.map(product => ({
-      SKU: product.code,
-      'Product Name': product.name,
-      Category: product.category,
-      Brand: product.brand,
-      Price: `PKR ${product.price.toFixed(2)}`,
-      Unit: product.unit,
-      Qty: product.qty,
-      'Created By': product.createdBy
+    const data = filteredData.map(category => ({
+      '#': filteredData.indexOf(category) + 1,
+      Category: category.name,
+      'Category Slug': category.slug,
+      'Created On': category.createdOn,
+      Status: category.status
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
-    XLSX.writeFile(workbook, `products_${new Date().toISOString().slice(0,10)}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Categories");
+    XLSX.writeFile(workbook, `categories_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
   // Export to PDF function
   const exportToPDF = () => {
     const doc = new jsPDF();
-    const headers = [['SKU', 'Product Name', 'Category', 'Brand', 'Price', 'Unit', 'Qty', 'Created By']];
-    const data = filteredData.map(product => [
-      product.code,
-      product.name,
-      product.category,
-      product.brand,
-      `PKR ${product.price.toFixed(2)}`,
-      product.unit,
-      product.qty,
-      product.createdBy
+    const headers = [['#', 'Category', 'Category Slug', 'Created On', 'Status']];
+    const data = filteredData.map(category => [
+      filteredData.indexOf(category) + 1,
+      category.name,
+      category.slug,
+      category.createdOn,
+      category.status
     ]);
 
     autoTable(doc, {
       head: headers,
       body: data,
       theme: 'grid',
-      styles: { fontSize: 8 },
+      styles: { fontSize: 9 },
       headStyles: { fillColor: [15, 23, 42] }
     });
 
-    doc.save(`products_${new Date().toISOString().slice(0,10)}.pdf`);
+    doc.save(`categories_${new Date().toISOString().slice(0,10)}.pdf`);
   };
-  // Derive unique categories & brands
-  const categories = useMemo(() => ['All', ...new Set(products.map(p => p.category))], [products]);
-  const brands = useMemo(() => ['All', ...new Set(products.map(p => p.brand))], [products]);
+  // Status options
+  const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
 
   // Columns configuration
   const columns = [
@@ -101,7 +88,6 @@ export default function ProductList({ products, setShowForm }) {
       id: 'index',
       header: '#',
       cell: ({ row, table }) => {
-        // if you’re paginating and want a global index:
         const page = table.getState().pagination.pageIndex;
         const size = table.getState().pagination.pageSize;
         return (
@@ -109,81 +95,45 @@ export default function ProductList({ products, setShowForm }) {
             {page * size + row.index + 1}
           </span>
         );
-        // otherwise, for non-paginated just use row.index + 1
       },
       size: 50,
       meta: { align: 'center' }
     },
-
-    {
-      accessorKey: 'code',
-      header: 'SKU',
-      size: 80,
-    },
     {
       accessorKey: 'name',
-      header: 'Product Name',
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-3">
-          <img 
-            src={row.original.image} 
-            alt={row.original.name} 
-            className="w-10 h-10 rounded-lg object-cover border"
-          />
-          <span className="font-medium">{row.original.name}</span>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'category',
       header: 'Category',
-      size: 100,
+      size: 150,
     },
     {
-      accessorKey: 'brand',
-      header: 'Brand',
-      size: 100,
+      accessorKey: 'slug',
+      header: 'Category Slug',
+      size: 150,
     },
     {
-      accessorKey: 'price',
-      header: 'Price',
-      cell: ({ getValue }) => `PKR ${getValue().toFixed(2)}`,
-      size: 80,
+      accessorKey: 'createdOn',
+      header: 'Created On',
+      size: 120,
     },
     {
-      accessorKey: 'unit',
-      header: 'Unit',
-      size: 60,
-    },
-    {
-      accessorKey: 'qty',
-      header: 'Qty',
-      size: 60,
-    },
-    {
-      accessorKey: 'createdBy',
-      header: 'Created By',
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <img 
-            src={row.original.createdByAvatar} 
-            alt={row.original.createdBy} 
-            className="w-6 h-6 rounded-full"
-          />
-          <span>{row.original.createdBy}</span>
-        </div>
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ getValue }) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          getValue() === 'Active' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800'
+        }`}>
+          {getValue()}
+        </span>
       ),
-      size: 140,
+      size: 100,
     },
     {
       id: 'actions',
       header: 'Actions',
-      cell: ({ row }) => (
+      cell: () => (
         <div className="flex space-x-1">
           <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
-            <EyeIcon className="w-5 h-5" />
-          </button>
-          <button className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg">
             <PencilIcon className="w-5 h-5" />
           </button>
           <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg">
@@ -191,18 +141,17 @@ export default function ProductList({ products, setShowForm }) {
           </button>
         </div>
       ),
-      size: 120,
+      size: 100,
     },
   ];
 
   // Filtered data
   const filteredData = useMemo(() => {
-    return products.filter(p => 
-      (categoryFilter === 'All' || p.category === categoryFilter) &&
-      (brandFilter === 'All' || p.brand === brandFilter) &&
-      `${p.code} ${p.name}`.toLowerCase().includes(search.toLowerCase())
+    return categories.filter(cat => 
+      (statusFilter === 'All' || cat.status === statusFilter) &&
+      `${cat.name} ${cat.slug}`.toLowerCase().includes(search.toLowerCase())
     );
-  }, [products, search, categoryFilter, brandFilter]);
+  }, [categories, search, statusFilter]);
 
   // Table instance
   const table = useReactTable({
@@ -216,7 +165,6 @@ export default function ProductList({ products, setShowForm }) {
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    debugTable: true,
   });
 
   return (
@@ -225,39 +173,37 @@ export default function ProductList({ products, setShowForm }) {
       <div className="bg-white rounded-xl p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Product List</h1>
-            <p className="text-gray-600">Manage your products inventory</p>
+            <h1 className="text-2xl font-bold text-gray-800">Category</h1>
+            <p className="text-gray-600">Manage your categories</p>
           </div>
+
+
           <div className='flex gap-1'>
-            {/* Control buttons */}
+            {/* control buttons */}
             <div className="flex items-center space-x-2">
-              <button onClick={exportToPDF} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                <button onClick={exportToPDF} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                 <img src="/src/assets/icons/pdf.svg" alt="pdf" className="w-5 h-5" />
-              </button>
-              <button onClick={exportToExcel} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                </button>
+                <button onClick={exportToExcel} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                 <img src="/src/assets/icons/excel.svg" alt="excel" className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                </button>
+                <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                 <LoopIcon className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                </button>
+                <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                 <ChevronUpIcon className="w-5 h-5" />
-              </button>
+                </button>
             </div>
-            
             <div className="flex space-x-3">
-              <button onClick={()=>  setShowForm(true)} className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center">
+                <button 
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 flex items-center"
+                >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
-                Import
-              </button>
-              <NavLink to="/product/add" className="px-4 py-2 bg-black text-white rounded-lg hover:bg-blue-700 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Add Product
-              </NavLink>
+                Add Category
+                </button>
             </div>
           </div>
         </div>
@@ -271,7 +217,7 @@ export default function ProductList({ products, setShowForm }) {
               <input
                 type="text"
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Search products..."
+                placeholder="Search categories..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -285,27 +231,14 @@ export default function ProductList({ products, setShowForm }) {
           
           <div className="flex flex-wrap gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
                 className="w-full md:w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                value={categoryFilter}
-                onChange={e => setCategoryFilter(e.target.value)}
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
               >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-              <select
-                className="w-full md:w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                value={brandFilter}
-                onChange={e => setBrandFilter(e.target.value)}
-              >
-                {brands.map(br => (
-                  <option key={br} value={br}>{br}</option>
+                {statusOptions.map(status => (
+                  <option key={status} value={status}>{status}</option>
                 ))}
               </select>
             </div>
@@ -353,13 +286,12 @@ export default function ProductList({ products, setShowForm }) {
         
         {filteredData.length === 0 && (
           <div className="text-center py-8">
-            <div className="text-gray-500">No products found</div>
+            <div className="text-gray-500">No categories found</div>
             <button 
               className="mt-2 text-blue-600 hover:text-blue-800"
               onClick={() => {
                 setSearch('');
-                setCategoryFilter('All');
-                setBrandFilter('All');
+                setStatusFilter('All');
               }}
             >
               Clear filters
