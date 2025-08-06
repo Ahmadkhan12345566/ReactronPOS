@@ -12,6 +12,8 @@ import AddProduct from './pages/AddProduct';
 import Categories from './pages/Categories';
 import Brands from './pages/Brands';
 import Units from './pages/Units';
+import Invoices from './pages/Invoices';
+import SalesReturn from './pages/SalesReturn';
 function App() {
   return (
     <PosProvider>
@@ -24,6 +26,8 @@ function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/brands" element={<Brands />} />
             <Route path="/units" element={<Units />} />
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/sales/return" element={<SalesReturn />} />
             <Route path="/product/add" element={<AddProduct />} />
             <Route path="/pos" element={<POS />} />
             <Route path="/sales" element={<Sales />} />
