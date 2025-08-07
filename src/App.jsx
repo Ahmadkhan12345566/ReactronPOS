@@ -14,6 +14,13 @@ import Brands from './pages/Brands';
 import Units from './pages/Units';
 import Invoices from './pages/Invoices';
 import SalesReturn from './pages/SalesReturn';
+import Customers from './pages/Customers';
+import Billers from './pages/Billers';
+import Suppliers from './pages/Suppliers';
+import PurchaseReport from './pages/PurchaseReport';
+import CustomerDueReport from './pages/CustomerDueReport';
+import CustomerReport from './pages/CustomerReport';
+import SalesReport from './pages/SalesReport';
 function App() {
   return (
     <PosProvider>
@@ -27,12 +34,19 @@ function App() {
             <Route path="/brands" element={<Brands />} />
             <Route path="/units" element={<Units />} />
             <Route path="/invoices" element={<Invoices />} />
+            <Route path="/customers" element={<Customers/>} />
+            <Route path="/billers" element={<Billers/>} />
+            <Route path="/suppliers" element={<Suppliers/>} />
             <Route path="/sales/return" element={<SalesReturn />} />
-            <Route path="/product/add" element={<AddProduct />} />
+            <Route path="/products/add" element={<AddProduct />} />
             <Route path="/pos" element={<POS />} />
             <Route path="/sales" element={<Sales />} />
+            <Route path="sales/report" element={<SalesReport />} />
             <Route path="/purchases" element={<Purchases />} />
-            <Route path="/purchase/add" element={<AddPurchase />} />
+            <Route path="/purchases/add" element={<AddPurchase />} />
+            <Route path="/purchases/report" element={<PurchaseReport />} />
+            <Route path="/customers/report/due" element={<CustomerDueReport />} />
+            <Route path="/customers/report" element={<CustomerReport />} />
           </Routes>
         </div>
       </BrowserRouter>

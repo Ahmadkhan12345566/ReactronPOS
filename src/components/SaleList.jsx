@@ -285,7 +285,7 @@ export default function SaleList({ sales, setShowForm }) {
                   <ChevronUpIcon className="w-5 h-5" />
                 </button>
             </div>
-            <div className="flex space-x-3">
+            {/* <div className="flex space-x-3">
                 <button 
                   onClick={() => setShowForm(true)}
                   className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 flex items-center"
@@ -295,7 +295,7 @@ export default function SaleList({ sales, setShowForm }) {
                   </svg>
                   Add Sales
                 </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
