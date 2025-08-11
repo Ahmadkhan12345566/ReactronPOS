@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import SaleList from '../components/SaleList';
+import SalesList from '../components/SalesList';
 
 // Dummy sales data
 export const dummySales = [
@@ -155,13 +155,17 @@ export const dummySales = [
   }
 ];
 
+// Dummy sales data (same as before)
+
 export default function Sales() {
   const [sales] = useState(dummySales);
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <SaleList sales={sales} setShowForm={setShowForm} />
+    <div className="p-6 h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <SalesList sales={sales} setShowForm={setShowForm} />
+      </div>
       {/* We'll add the AddSales modal here later */}
     </div>
   );

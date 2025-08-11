@@ -110,7 +110,7 @@ export default function Billers() {
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <BillerList Billers={Billers} setShowForm={setShowForm} />
     </div>
   );

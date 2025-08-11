@@ -25,9 +25,10 @@ function App() {
   return (
     <PosProvider>
       <BrowserRouter>
-        <Navbar />
-        <div>
-          <Routes>
+        <div className="flex flex-col h-screen">
+          <Navbar className="h-[5%] min-h-[3rem]" />
+          <div className="flex-1 overflow-hidden">
+            <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/products" element={<Products />} />
@@ -48,6 +49,7 @@ function App() {
             <Route path="/customers/report/due" element={<CustomerDueReport />} />
             <Route path="/customers/report" element={<CustomerReport />} />
           </Routes>
+          </div>
         </div>
       </BrowserRouter>
     </PosProvider>

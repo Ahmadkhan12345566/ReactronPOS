@@ -266,14 +266,33 @@ export const dummyProducts = [
   },
 ];
 
+
 export default function Products() {
   const [products] = useState(dummyProducts);
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <ProductList products={products} setShowForm={setShowForm} />
+    <div className="p-6 h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <ProductList 
+          products={products} 
+          setShowForm={setShowForm} 
+        />
+      </div>
       {showForm && <ImportProduct showForm={showForm} setShowForm={setShowForm}/>}
     </div>
   );
 }
+// export default function Products() {
+//   const [products] = useState(dummyProducts);
+//   const [showForm, setShowForm] = useState(false);
+
+//   return (
+//     <div className="p-6 h-full flex flex-col">
+//       <div className="flex-1 min-h-0">
+//         <ProductList products={products} setShowForm={setShowForm} />
+//       </div>
+//       {showForm && <ImportProduct showForm={showForm} setShowForm={setShowForm}/>}
+//     </div>
+//   );
+// }

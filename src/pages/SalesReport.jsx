@@ -149,7 +149,7 @@ export default function SalesReport() {
   const [reports] = useState(dummySalesReports);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <SalesReportList reports={reports} />
     </div>
   );

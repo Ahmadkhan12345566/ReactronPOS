@@ -131,7 +131,7 @@ export default function CustomerReport() {
   const pageDescription = isDueReport ? "View Reports of Customer" : "Manage your customer reports";
   
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       {/* Navigation Tabs */}
       <div className="mb-6 border-b">
         <ul className="flex">

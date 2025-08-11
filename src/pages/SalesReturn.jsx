@@ -180,7 +180,7 @@ export default function SalesReturn() {
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <SalesReturnList salesReturns={salesReturns} setShowForm={setShowForm} />
       {/* We'll add the AddSalesReturn modal here later */}
     </div>

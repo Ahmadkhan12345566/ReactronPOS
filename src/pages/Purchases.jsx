@@ -54,11 +54,13 @@ const Purchases = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <PurchaseList 
-        purchases={dummyPurchases} 
-        onAddPurchase={() => navigate("/purchase/add")}
-      />
+    <div className="p-6 h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <PurchaseList 
+          purchases={dummyPurchases} 
+          onAddPurchase={() => navigate("/purchases/add")}
+        />
+      </div>
     </div>
   );
 };
