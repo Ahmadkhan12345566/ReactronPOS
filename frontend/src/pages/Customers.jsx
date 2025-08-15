@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import CustomerList from '../components/CustomerList';
+import CustomerList from '../components/lists/CustomerList';
 
 
 export const dummyCustomers = [

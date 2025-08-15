@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PurchaseReportList from '../components/PurchaseReportList';
+import PurchaseReportList from '../components/lists/PurchaseReportList';
 
 // Dummy purchase report data
 const dummyPurchaseReports = [

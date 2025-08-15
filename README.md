@@ -1,57 +1,33 @@
 # React POS System Template
 
-[![React](https://img.shields.io/badge/React-18.2+-61DAFB.svg?logo=react)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3+-06B6D4.svg?logo=tailwind-css)](https://tailwindcss.com/)
+[![React](https://img.shields.io/badge/React-19.1-61DAFB.svg?logo=react)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1-06B6D4.svg?logo=tailwind-css)](https://tailwindcss.com/)
+[![daisyUI](https://img.shields.io/badge/daisyUI-5.0-FF7B00)](https://daisyui.com/)
 
-A modern, customizable Point of Sale (POS) system frontend template built with React and Tailwind CSS. Designed for retail and hospitality businesses to manage sales, products, inventory, and customers.
+Modern Point of Sale system template for retail management featuring sales, inventory, and customer management.
 
 ![POS Dashboard Preview](./public/screenshot.png)
 
 ## Features
 
-- **Point of Sale Interface**
-  - Product catalog with category filtering
-  - Order management with quantity adjustment
-  - Customer selection and management
-  - Payment processing workflow
-  - Receipt generation
+- **POS & Checkout**
+  - Fast product selection, quantity adjustments, customer lookup, and receipt printing.
+  - Built-in payment flow and responsive product grid.
 
-- **Inventory Management**
-  - Product management (add/edit/delete)
-  - Category/brand/unit organization
-  - Stock tracking with quantity alerts
-  - Barcode generation
-  - Variable product variants
+- **Inventory**
+  - Add/edit products, categories/brands/units, stock tracking with alerts, and barcode/SKU support.
 
-- **Sales & Purchasing**
-  - Sales tracking and reporting
-  - Purchase order management
-  - Supplier management
-  - Invoice management
+- **Sales & Purchases**
+  - Track sales, manage purchases and suppliers, and handle invoices.
 
-- **Reporting & Analytics**
-  - Sales reports
-  - Purchase reports
-  - Customer due reports
-  - Exportable data (PDF/Excel)
+- **Reports & Exports**
+  - Sales/purchase/customer reports with PDF/Excel export.
 
-- **Multi-module Architecture**
-  - Customers management
-  - Suppliers management
-  - Billers management
-  - User roles and permissions
+- **Multi-user & Roles**
+  - User accounts, roles and basic permissions.
 
-## Tech Stack
-
-- **Frontend:** 
-  - React 18
-  - React Router 6
-  - Tailwind CSS
-  - Heroicons
-  - Headless UI
-- **State Management:** React Context API
-- **Data Export:** jsPDF, SheetJS (Excel)
-- **Build Tool:** Vite
+- **Utilities**
+  - Image uploads, product variants, and bulk actions.
 
 ## Installation
 
@@ -76,59 +52,46 @@ npm run dev
 npm run build
 ```
 
+## Technology Stack
+
+### Frontend
+- **React 19.1** - Core framework
+- **Tailwind CSS 4.1** - Styling and layout
+- **daisyUI 5.0** - UI component library
+- **React Router 7.7** - Navigation and routing
+
+### Utilities
+- **Heroicons** - Icon library
+- **Headless UI** - Accessible components
+- **React Table** - Data table management
+- **jsPDF + SheetJS** - PDF/Excel export
+
 ## Project Structure
 
 ```
 src/
-├── components/       # Reusable UI components
-│   ├── forms/        # Form components
-│   ├── lists/        # Data listing components
-│   └── POS/          # POS-specific components
-├── context/          # Context providers
-├── pages/            # Application pages
+├── components/           # Reusable UI components
+│   ├── forms/            # Form components
+│   ├── lists/            # Data listing components
+│   └── ListComponents/   # Listing components
+├── context/              # Context providers
+├── pages/                # Application pages
 │   ├── Dashboard.jsx
-│   ├── Products/
-│   ├── POS/
-│   ├── Sales/
-│   └── Purchases/
-├── assets/           # Static assets
-├── App.jsx           # Main application
-└── main.jsx          # Entry point
+│   ├── Product.jsx
+│   ├── POS.jsx
+│   ├── Sales.jsx
+│   └── Purchases.jsx
+├── assets/               # Static assets
+├── App.jsx               # Main application
+└── main.jsx              # Entry point
 ```
 
 ## Key Components
 
-1. **POS Interface** (`POS.jsx`)
-   - Real-time order management
-   - Customer selection
-   - Payment processing flow
-   - Responsive product grid
-
-2. **Product Management** (`Products.jsx`, `AddProduct.jsx`)
-   - Comprehensive product forms
-   - Image uploads
-   - Inventory tracking
-   - SKU/barcode generation
-
-3. **Data Tables** (`ProductList.jsx`)
-   - Filterable/sortable tables
-   - Pagination
-   - Bulk actions
-   - Export functionality
-
-4. **Form System** (`ProductForm.jsx`)
-   - Accordion-based forms
-   - Dynamic fields
-   - Validation-ready structure
-   - Responsive layouts
-
-## Customization
-
-Easily customize by modifying:
-- Theme colors in `tailwind.config.js`
-- Form fields in `AddProduct.jsx`
-- Table columns in `columnHelpers.jsx`
-- POS layout in `POS.jsx`
+1. **POS Interface (`POS.jsx`)** — live order/cart management, customer selection, payment, and receipts.  
+2. **Product Management (`Products.jsx`, `AddProduct.jsx`)** — product CRUD, images, SKUs/barcodes, and stock controls.  
+3. **Data Tables (`ProductList.jsx`)** — searchable, sortable tables with pagination, bulk actions, and exports.  
+4. **Form System (`ProductForm.jsx`)** — dynamic accordion forms and validation-ready layout.
 
 ## Contributing
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import UnitList from '../components/UnitList';
+import UnitList from '../components/lists/UnitList';
 
 // Dummy units data
 export const dummyUnits = [

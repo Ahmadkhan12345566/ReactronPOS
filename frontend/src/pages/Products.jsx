@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ProductList from '../components/ProductList';
+import ProductList from '../components/lists/ProductList';
 import { NavLink } from 'react-router-dom';
 import ImportProduct from "../components/ImportProduct";
 // Enhanced dummy products with more realistic data

@@ -1,16 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { useUI } from "./lists/useUI";
-import { selectColumn, imageColumn, statusColumn, actionsColumn } from './lists/columnHelpers';
+import { useUI } from "../ListComponents/useUI";
+import { selectColumn, imageColumn, statusColumn, actionsColumn } from '../ListComponents/columnHelpers';
 
 // Reusable components
-import ListContainer from './lists/ListContainer';
-import ListHeader from './lists/ListHeader';
-import ListControlButtons from './lists/ListControlButtons';
-import ListFilter from './lists/ListFilter';
-import ListTable from './lists/ListTable';
-import ListPagination from './lists/ListPagination';
-import SearchInput from './lists/SearchInput';
-import SelectFilters from './lists/SelectFilters';
+import ListContainer from '../ListComponents/ListContainer';
+import ListHeader from '../ListComponents/ListHeader';
+import ListControlButtons from '../ListComponents/ListControlButtons';
+import ListFilter from '../ListComponents/ListFilter';
+import ListTable from '../ListComponents/ListTable';
+import ListPagination from '../ListComponents/ListPagination';
+import SearchInput from '../ListComponents/SearchInput';
+import SelectFilters from '../ListComponents/SelectFilters';
 
 export default function BillerList({ Billers, setShowForm }) {
   const [search, setSearch] = useState('');

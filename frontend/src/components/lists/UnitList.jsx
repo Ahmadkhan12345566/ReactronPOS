@@ -1,21 +1,21 @@
 import React, { useState, useMemo } from 'react';
-import { useUI } from "./lists/useUI";
+import { useUI } from "../ListComponents/useUI";
 import { 
   selectColumn, 
   indexColumn, 
   statusColumn 
-} from './lists/columnHelpers';
+} from '../ListComponents/columnHelpers';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Reusable components
-import ListContainer from './lists/ListContainer';
-import ListHeader from './lists/ListHeader';
-import ListControlButtons from './lists/ListControlButtons';
-import ListFilter from './lists/ListFilter';
-import ListTable from './lists/ListTable';
-import ListPagination from './lists/ListPagination';
-import SearchInput from './lists/SearchInput';
-import SelectField from './lists/SelectField';
+import ListContainer from '../ListComponents/ListContainer';
+import ListHeader from '../ListComponents/ListHeader';
+import ListControlButtons from '../ListComponents/ListControlButtons';
+import ListFilter from '../ListComponents/ListFilter';
+import ListTable from '../ListComponents/ListTable';
+import ListPagination from '../ListComponents/ListPagination';
+import SearchInput from '../ListComponents/SearchInput';
+import SelectField from '../ListComponents/SelectField';
 
 export default function UnitList({ units, setShowForm }) {
   const [search, setSearch] = useState('');

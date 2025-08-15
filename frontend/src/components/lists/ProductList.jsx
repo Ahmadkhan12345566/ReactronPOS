@@ -2,18 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // Import reusable components
-import ListContainer from './lists/ListContainer';
-import ListHeader from './lists/ListHeader';
-import ListControlButtons from './lists/ListControlButtons';
-import ListTable from './lists/ListTable';
-import ListPagination from './lists/ListPagination';
-import { useUI } from './lists/useUI';
+import ListContainer from '../ListComponents/ListContainer';
+import ListHeader from '../ListComponents/ListHeader';
+import ListControlButtons from '../ListComponents/ListControlButtons';
+import ListTable from '../ListComponents/ListTable';
+import ListPagination from '../ListComponents/ListPagination';
+import { useUI } from '../ListComponents/useUI';
 import { 
   selectColumn, 
   indexColumn, 
   imageColumn,
   actionsColumn
-} from './lists/columnHelpers';
+} from '../ListComponents/columnHelpers';
 
 export default function ProductList({ products, setShowForm }) {
   const [search, setSearch] = useState('');

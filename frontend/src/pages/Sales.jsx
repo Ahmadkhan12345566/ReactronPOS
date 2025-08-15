@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import SalesList from '../components/SalesList';
+import SalesList from '../components/lists/SalesList';
 
 // Dummy sales data
 export const dummySales = [

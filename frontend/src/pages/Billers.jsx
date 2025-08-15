@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import BillerList from '../components/BillerList';
+import BillerList from '../components/lists/BillerList';
 
 export const dummyBillers = [
   {

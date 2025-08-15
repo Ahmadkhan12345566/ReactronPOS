@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink, Routes, Route, useLocation } from 'react-router-dom';
-import CustomerReportList from '../components/CustomerReportList';
-import CustomerDueReportList from '../components/CustomerDueReportList';
+import CustomerDueReportList from '../components/lists/CustomerDueReportList';
 
 export const dummyCustomerDueReports = [
   {
@@ -182,10 +181,6 @@ export default function CustomerDueReport() {
           </li>
         </ul>
       </div>
-
-      
-
-      {/* Route-based content */}
         <CustomerDueReportList reports={dummyCustomerDueReports} isDueReport={false} />
     </div>
   );

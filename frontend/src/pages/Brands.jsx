@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import BrandList from '../components/BrandList';
+import BrandList from '../components/lists/BrandList';
 
 export const dummyBrands = [
   {

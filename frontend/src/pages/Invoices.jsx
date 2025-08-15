@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import InvoiceList from '../components/InvoiceList';
+import InvoiceList from '../components/lists/InvoiceList';
 
 // Dummy invoice data
 export const dummyInvoices = [

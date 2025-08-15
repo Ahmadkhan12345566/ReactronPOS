@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import SupplierList from '../components/SupplierList';
+import SupplierList from '../components/lists/SupplierList';
 
 export const dummySuppliers = [
   {

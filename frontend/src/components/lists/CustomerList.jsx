@@ -1,18 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { useUI } from "./lists/useUI";
-import { selectColumn, indexColumn, statusColumn, actionsColumn } from './lists/columnHelpers';
+import { useUI } from "../ListComponents/useUI";
+import { selectColumn, imageColumn, statusColumn, actionsColumn } from '../ListComponents/columnHelpers';
 
 // Reusable components
-import ListContainer from './lists/ListContainer';
-import ListHeader from './lists/ListHeader';
-import ListControlButtons from './lists/ListControlButtons';
-import ListFilter from './lists/ListFilter';
-import ListTable from './lists/ListTable';
-import ListPagination from './lists/ListPagination';
-import SearchInput from './lists/SearchInput';
-import SelectFilters from './lists/SelectFilters';
+import ListContainer from '../ListComponents/ListContainer';
+import ListHeader from '../ListComponents/ListHeader';
+import ListControlButtons from '../ListComponents/ListControlButtons';
+import ListFilter from '../ListComponents/ListFilter';
+import ListTable from '../ListComponents/ListTable';
+import ListPagination from '../ListComponents/ListPagination';
+import SearchInput from '../ListComponents/SearchInput';
+import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function CategoryList({ categories, setShowForm }) {
+export default function CustomerList({ customers, setShowForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
@@ -23,33 +23,40 @@ export default function CategoryList({ categories, setShowForm }) {
   // Columns configuration using helpers
   const columns = [
     selectColumn(),
-    indexColumn(),
     {
-      accessorKey: 'name',
-      header: 'Category',
-      size: 150,
+      accessorKey: 'code',
+      header: 'Code',
+      size: 100,
+    },
+    imageColumn('name', 'Customer', 'avatar'),
+    {
+      accessorKey: 'email',
+      header: 'Email',
+      size: 200,
     },
     {
-      accessorKey: 'slug',
-      header: 'Category Slug',
-      size: 150,
+      accessorKey: 'phone',
+      header: 'Phone',
+      size: 120,
     },
     {
-      accessorKey: 'createdOn',
-      header: 'Created On',
+      accessorKey: 'country',
+      header: 'Country',
       size: 120,
     },
     statusColumn('status', 'Status'),
-    actionsColumn(['edit', 'delete'])
+    actionsColumn(['view', 'edit', 'delete'])
   ];
 
   // Filtered data
   const filteredData = useMemo(() => {
-    return categories.filter(cat => 
-      (statusFilter === 'All' || cat.status === statusFilter) &&
-      `${cat.name} ${cat.slug}`.toLowerCase().includes(search.toLowerCase())
+    return customers.filter(customer => 
+      (statusFilter === 'All' || customer.status === statusFilter) &&
+      `${customer.name} ${customer.email} ${customer.phone} ${customer.country}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
     );
-  }, [categories, search, statusFilter]);
+  }, [customers, search, statusFilter]);
 
   // Use UI hook
   const {
@@ -58,7 +65,7 @@ export default function CategoryList({ categories, setShowForm }) {
     primaryButtons,
     emptyState
   } = useUI({
-    moduleName: 'categories',
+    moduleName: 'customers',
     filteredData,
     columns,
     rowSelection,
@@ -71,12 +78,13 @@ export default function CategoryList({ categories, setShowForm }) {
         }
   });
 
- 
+  
+
   return (
     <ListContainer>
       <ListHeader 
-        title="Categories"
-        description="Manage your categories"
+        title="Customers"
+        description="Manage your customers"
         controlButtons={<ListControlButtons buttons={controlButtons} />}
         primaryButtons={primaryButtons.map((btn, i) => (
           <React.Fragment key={i}>{btn.element}</React.Fragment>
@@ -84,7 +92,7 @@ export default function CategoryList({ categories, setShowForm }) {
       />
       
       <ListFilter>
-        <SearchInput search={search} setSearch={setSearch} placeholder="Search categories..." />
+        <SearchInput search={search} setSearch={setSearch}/>
         <SelectFilters 
           statusFilter={statusFilter} 
           setStatusFilter={setStatusFilter} 

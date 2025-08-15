@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Routes, Route, useLocation } from 'react-router-dom';
-import CustomerReportList from '../components/CustomerReportList';
-import CustomerDueReportList from '../components/CustomerDueReportList';
+import CustomerReportList from '../components/lists/CustomerReportList';
 
 // Dummy data for Customer Report
 const dummyCustomerReports = [
@@ -168,7 +167,6 @@ export default function CustomerReport() {
 
       
 
-      {/* Conditional rendering based on route */}
             <CustomerReportList 
               reports={dummyCustomerReports} 
               isDueReport={false}

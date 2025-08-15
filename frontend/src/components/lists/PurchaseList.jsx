@@ -5,16 +5,16 @@ import {
   PencilIcon,
 } from '@heroicons/react/24/outline';
 // Reusable components
-import ListContainer from './lists/ListContainer';
-import ListHeader from './lists/ListHeader';
-import ListControlButtons from './lists/ListControlButtons';
-import ListFilter from './lists/ListFilter';
-import ListTable from './lists/ListTable';
-import ListPagination from './lists/ListPagination';
-import SearchInput from './lists/SearchInput';
-import SelectFilters from './lists/SelectFilters';
-import { useUI } from "./lists/useUI";
-import { selectColumn, indexColumn, statusColumn, actionsColumn, imageColumn } from './lists/columnHelpers';
+import ListContainer from '../ListComponents/ListContainer';
+import ListHeader from '../ListComponents/ListHeader';
+import ListControlButtons from '../ListComponents/ListControlButtons';
+import ListFilter from '../ListComponents/ListFilter';
+import ListTable from '../ListComponents/ListTable';
+import ListPagination from '../ListComponents/ListPagination';
+import SearchInput from '../ListComponents/SearchInput';
+import SelectFilters from '../ListComponents/SelectFilters';
+import { useUI } from "../ListComponents/useUI";
+import { selectColumn, indexColumn, statusColumn, actionsColumn, imageColumn } from '../ListComponents/columnHelpers';
 
 const PurchaseList = ({ purchases, onAddPurchase }) => {
   const [search, setSearch] = useState('');

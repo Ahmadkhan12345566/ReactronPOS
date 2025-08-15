@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import PurchaseList from "../components/PurchaseList";
+import PurchaseList from "../components/lists/PurchaseList";
 import { useNavigate } from "react-router-dom";
 
 // Updated dummy data to match new template requirements

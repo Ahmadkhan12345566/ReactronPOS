@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import CategoryList from '../components/CategoryList';
+import CategoryList from '../components/lists/CategoryList';
 
 // Dummy categories data
 export const dummyCategories = [
