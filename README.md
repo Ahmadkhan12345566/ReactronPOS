@@ -6,7 +6,7 @@
 
 Modern Point of Sale system template for retail management featuring sales, inventory, and customer management.
 
-![POS Dashboard Preview](./public/screenshot.png)
+![POS Dashboard Preview](./frontend/public/screenshot.png)
 
 ## Features
 
@@ -77,7 +77,7 @@ src/
 ├── context/              # Context providers
 ├── pages/                # Application pages
 │   ├── Dashboard.jsx
-│   ├── Product.jsx
+│   ├── Products.jsx
 │   ├── POS.jsx
 │   ├── Sales.jsx
 │   └── Purchases.jsx
