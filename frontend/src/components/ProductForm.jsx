@@ -54,7 +54,7 @@ const ProductForm = ({ onClose }) => {
           </div>
 
           <div>
-            <label className="block font-medium mb-1 flex items-center justify-between">
+            <label className="font-medium mb-1 flex items-center justify-between">
               Product Code
               <span
                 className="ml-2 text-xs text-gray-500 cursor-help"
