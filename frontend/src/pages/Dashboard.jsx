@@ -1,15 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   ArrowPathIcon,
   CurrencyDollarIcon,
   ShoppingBagIcon,
   UserGroupIcon,
   CubeIcon,
-  ChartBarIcon,
-  ChartPieIcon
 } from '@heroicons/react/24/outline';
-import ListTable from '../components/ListComponents/ListTable';
-import { useReactTable, getCoreRowModel } from '@tanstack/react-table';
 
 const Dashboard = () => {
   // Dummy data for dashboard cards
@@ -44,15 +40,6 @@ const Dashboard = () => {
     }
   ];
 
-  // Recent transactions data
-  const transactions = [
-    { id: 1, customer: "John Smith", amount: 250, status: "Completed", date: "2023-10-15" },
-    { id: 2, customer: "Sarah Johnson", amount: 150, status: "Pending", date: "2023-10-14" },
-    { id: 3, customer: "Mike Wilson", amount: 350, status: "Completed", date: "2023-10-13" },
-    { id: 4, customer: "Emily Davis", amount: 450, status: "Completed", date: "2023-10-12" },
-    { id: 5, customer: "Robert Brown", amount: 200, status: "Failed", date: "2023-10-11" }
-  ];
-
   // Chart data
   const [activeChart, setActiveChart] = useState('revenue');
   
@@ -79,76 +66,34 @@ const Dashboard = () => {
     { category: 'Hot Drinks', value: 30, color: '#F59E0B' },
   ];
 
-  // Define columns for transactions table
-  const columns = [
-    {
-      accessorKey: 'customer',
-      header: 'Customer',
-    },
-    {
-      accessorKey: 'amount',
-      header: 'Amount',
-      cell: ({ getValue }) => <span>${getValue()}</span>
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => {
-        const status = row.original.status;
-        let className = '';
-        if (status === 'Completed') className = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-        else if (status === 'Pending') className = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-        else if (status === 'Failed') className = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-
-        return (
-          <span className={`px-2 py-1 text-xs rounded-full ${className}`}>
-            {status}
-          </span>
-        );
-      }
-    },
-    {
-      accessorKey: 'date',
-      header: 'Date',
-    }
-  ];
-
-  // Create table instance
-  const table = useReactTable({
-    data: transactions,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
   // Function to render bar chart
   const renderBarChart = () => {
     const maxValue = Math.max(...revenueData.map(d => activeChart === 'revenue' ? d.revenue : d.orders));
-    const barHeight = 150;
-    const barWidth = 40;
-    const spacing = 20;
     
     return (
-      <div className="h-80 flex items-end justify-center gap-1 px-4">
-        {revenueData.map((data, index) => {
-          const value = activeChart === 'revenue' ? data.revenue : data.orders;
-          const height = (value / maxValue) * barHeight;
-          
-          return (
-            <div key={index} className="flex flex-col items-center">
-              <div className="flex flex-col items-center">
-                <div 
-                  className={`w-10 rounded-t-md ${activeChart === 'revenue' ? 'bg-blue-500' : 'bg-green-500'}`}
-                  style={{ height: `${height}px` }}
-                >
-                  <div className="text-white text-xs font-semibold text-center mt-1">
-                    {activeChart === 'revenue' ? `$${value}` : value}
+      <div className="flex flex-col h-full">
+        <div className="flex-grow flex items-end justify-between px-4">
+          {revenueData.map((data, index) => {
+            const value = activeChart === 'revenue' ? data.revenue : data.orders;
+            const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
+            
+            return (
+              <div key={index} className="flex flex-col items-center h-full flex-1">
+                <div className="flex flex-col items-center justify-end h-full w-full max-w-[2rem] md:max-w-none">
+                  <div 
+                    className={`w-full rounded-t-md ${activeChart === 'revenue' ? 'bg-blue-500' : 'bg-green-500'}`}
+                    style={{ height: `${height}%` }}
+                  >
+                    <div className="text-white text-xs font-semibold text-center mt-1">
+                      {activeChart === 'revenue' ? `$${value}` : value}
+                    </div>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500 mt-2">{data.month}</div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -162,23 +107,20 @@ const Dashboard = () => {
     const radius = center - 10;
     
     return (
-      <div className="h-80 flex flex-col items-center justify-center relative">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <div className="flex flex-col items-center justify-center h-full">
+        <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="max-h-[200px]">
           {salesDistribution.map((item, index) => {
             const sliceAngle = (item.value / total) * 360;
             const endAngle = startAngle + sliceAngle;
             
-            // Convert angles to radians
             const startAngleRad = (startAngle * Math.PI) / 180;
             const endAngleRad = (endAngle * Math.PI) / 180;
             
-            // Calculate start and end points
             const x1 = center + radius * Math.cos(startAngleRad);
             const y1 = center + radius * Math.sin(startAngleRad);
             const x2 = center + radius * Math.cos(endAngleRad);
             const y2 = center + radius * Math.sin(endAngleRad);
             
-            // Large arc flag if the slice is more than 180 degrees
             const largeArcFlag = sliceAngle > 180 ? 1 : 0;
             
             const pathData = [
@@ -220,7 +162,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex flex-col h-full p-6 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-950 overflow-auto">
+    <div className="flex flex-col min-h-screen p-6 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-950">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -255,9 +197,9 @@ const Dashboard = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
         {/* Revenue Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Revenue Overview</h2>
             <div className="flex space-x-2">
@@ -275,32 +217,22 @@ const Dashboard = () => {
               </button>
             </div>
           </div>
-          {renderBarChart()}
+          <div className="flex-1 min-h-0">
+            {renderBarChart()}
+          </div>
         </div>
 
         {/* Sales Distribution */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6 flex flex-col">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Sales Distribution</h2>
-          {renderPieChart()}
+          <div className="flex-1 min-h-0">
+            {renderPieChart()}
+          </div>
         </div>
       </div>
 
-      {/* Recent Transactions - UPDATED SECTION */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6 flex-1 flex flex-col min-h-[400px]">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Transactions</h2>
-          <button className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-            View All
-          </button>
-        </div>
-        <div className="flex-1 overflow-auto">
-          <ListTable 
-            table={table} 
-            isLoading={false} 
-            emptyState={<div className="text-center py-8 text-gray-500 dark:text-gray-400">No transactions found</div>}
-          />
-        </div>
-      </div>
+      {/* Bottom Spacer */}
+      <div className="h-6"></div>
     </div>
   );
 };
