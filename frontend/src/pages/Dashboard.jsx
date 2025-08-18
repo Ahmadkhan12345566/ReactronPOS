@@ -285,20 +285,19 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Recent Transactions */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6 flex-1 flex flex-col">
-        <div className="flex justify-between items-center mb-6">
+      {/* Recent Transactions - UPDATED SECTION */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6 flex-1 flex flex-col min-h-[400px]">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Transactions</h2>
           <button className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
             View All
           </button>
         </div>
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 overflow-auto">
           <ListTable 
             table={table} 
             isLoading={false} 
             emptyState={<div className="text-center py-8 text-gray-500 dark:text-gray-400">No transactions found</div>}
-            maxHeight="max-h-[calc(100vh-40rem)]"
           />
         </div>
       </div>
