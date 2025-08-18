@@ -6,7 +6,7 @@
 
 Modern Point of Sale system template for retail management featuring sales, inventory, and customer management.
 
-![POS Dashboard Preview](./frontend/public/screenshot.png)
+![POS Dashboard Preview](https://raw.githubusercontent.com/Ahmadkhan12345566/posb/main/frontend/public/screenshot.png)
 
 ## Features
 
