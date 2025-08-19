@@ -81,7 +81,6 @@ export default function Brands() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <BrandList brands={brands} setShowForm={setShowForm} />
-      {/* We'll add the AddBrand modal here later */}
     </div>
   );
 }
