@@ -1,15 +1,20 @@
 {
-  "name": "my-pos-app",
+  "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "main": "electron.js",
+  "description": "Point of Sale System",
+  "author": "Your Name <your.email@example.com>",
   "scripts": {
     "dev": "concurrently \"vite --host\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
+    "dist": "npm run build && electron-builder",
     "start": "electron .",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -22,6 +27,7 @@
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-table": "^8.21.3",
     "daisyui": "^5.0.50",
+    "electron-updater": "^6.1.7",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "react": "^19.1.0",
@@ -35,6 +41,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "electron": "^37.2.5",
     "electron-builder": "^26.0.12",
@@ -46,5 +53,46 @@
     "tailwindcss": "^4.1.11",
     "vite": "^7.0.4",
     "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.yourcompany.pos",
+    "productName": "My POS System",
+    "copyright": "Copyright © 2024 Your Company",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron.js",
+      "preload.js"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.icns",
+      "category": "public.app-category.business"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icon.png",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "My POS"
+    }
   }
 }

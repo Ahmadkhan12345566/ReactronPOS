@@ -36,12 +36,12 @@ export const useUI = ({
 
   const controlButtons = [
     {
-      icon: <img src="/src/assets/icons/pdf.svg" alt="pdf" className="w-5 h-5" />,
+      icon: <img src="assets/icons/pdf.svg" alt="pdf" className="w-5 h-5" />,
       onClick: () => exportToPDF(filteredData, moduleName),
       title: 'Export to PDF',
     },
     {
-      icon: <img src="/src/assets/icons/excel.svg" alt="excel" className="w-5 h-5" />,
+      icon: <img src="assets/icons/excel.svg" alt="excel" className="w-5 h-5" />,
       onClick: () => exportToExcel(filteredData, moduleName),
       title: 'Export to Excel',
     },

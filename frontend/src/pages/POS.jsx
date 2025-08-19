@@ -16,9 +16,9 @@ export const products = [
     price: 7.0,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/beef-burger.png",
+    image: "assets/img/beef-burger.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id:  2,
@@ -29,9 +29,9 @@ export const products = [
     price: 3.25,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/choco-glaze-donut-peanut.png",
+    image: "assets/img/choco-glaze-donut-peanut.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id:  3,
@@ -42,9 +42,9 @@ export const products = [
     price: 2.75,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/choco-glaze-donut.png",
+    image: "assets/img/choco-glaze-donut.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id:  4,
@@ -55,9 +55,9 @@ export const products = [
     price: 3.5,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/cinnamon-roll.png",
+    image: "assets/img/cinnamon-roll.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id:  5,
@@ -68,9 +68,9 @@ export const products = [
     price: 4.0,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/coffee-latte.png",
+    image: "assets/img/coffee-latte.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id:  6,
@@ -81,9 +81,9 @@ export const products = [
     price: 2.5,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/croissant.png",
+    image: "assets/img/croissant.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id:  7,
@@ -94,9 +94,9 @@ export const products = [
     price: 4.25,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/ice-chocolate.png",
+    image: "assets/img/ice-chocolate.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id:  8,
@@ -107,9 +107,9 @@ export const products = [
     price: 1.99,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/ice-tea.png",
+    image: "assets/img/ice-tea.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id:  9,
@@ -120,9 +120,9 @@ export const products = [
     price: 4.5,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/matcha-latte.png",
+    image: "assets/img/matcha-latte.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id: 10,
@@ -133,9 +133,9 @@ export const products = [
     price: 5.5,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/sandwich.png",
+    image: "assets/img/sandwich.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id: 11,
@@ -146,9 +146,9 @@ export const products = [
     price: 6.75,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/sawarma.png",
+    image: "assets/img/sawarma.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   },
   {
     id: 12,
@@ -159,9 +159,9 @@ export const products = [
     price: 2.95,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/red-glaze-donut.png",
+    image: "assets/img/red-glaze-donut.png",
     createdBy: "Admin",
-    createdByAvatar: "./src/assets/img/users/user-default.jpg"
+    createdByAvatar: "assets/img/users/user-default.jpg"
   }
 ];
 export const customers = [
@@ -216,10 +216,10 @@ export default function POS() {
   }
 
   return (
-    <div className="h-full overflow-auto flex-1 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-950 p-4">
+    <div className="h-full overflow-auto flex-1 bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="mx-auto flex flex-col lg:flex-row gap-6 h-full">
         {/* Order Section - Left Side */}
-        <div className="w-full lg:w-[27.5%] h-full bg-white rounded-2xl border border-gray-800 dark:border-gray-600 shadow-lg flex flex-col">
+        <div className="w-full lg:w-[27.5%] h-full bg-white rounded-2xl border border-gray-800 shadow-lg flex flex-col">
             <div className="p-6 flex flex-col flex-1 overflow-hidden min-h-0">
               {/* Customer Selection */}
               <div className="mb-6">
@@ -392,7 +392,7 @@ export default function POS() {
           </div>
 
           {/* Products Section - Right Side */}
-        <div className="w-full lg:w-[72.5%] h-full bg-white rounded-2xl border border-gray-800 dark:border-gray-600 shadow-lg flex flex-col">
+        <div className="w-full lg:w-[72.5%] h-full bg-white rounded-2xl border border-gray-800 shadow-lg flex flex-col">
             <div className="p-6 flex flex-col flex-1 overflow-hidden">
               {/* Categories */}
               <div className="flex gap-2 mb-6 overflow-x-auto pb-2 min-h-0">

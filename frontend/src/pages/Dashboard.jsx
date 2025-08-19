@@ -6,9 +6,7 @@ import {
   UserGroupIcon,
   CubeIcon,
 } from '@heroicons/react/24/outline';
-
-const Dashboard = () => {
-  // Dummy data for dashboard cards
+ // Dummy data for dashboard cards
   const stats = [
     {
       title: "Total Revenue",
@@ -40,8 +38,6 @@ const Dashboard = () => {
     }
   ];
 
-  // Chart data
-  const [activeChart, setActiveChart] = useState('revenue');
   
   // Revenue data for bar chart
   const revenueData = [
@@ -65,6 +61,14 @@ const Dashboard = () => {
     { category: 'Cold Drinks', value: 25, color: '#10B981' },
     { category: 'Hot Drinks', value: 30, color: '#F59E0B' },
   ];
+
+
+  
+const Dashboard = () => {
+  
+  // Chart data
+    const [activeChart, setActiveChart] = useState('revenue');
+
 
   // Function to render bar chart
   const renderBarChart = () => {
@@ -162,14 +166,14 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen p-6 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-950">
+    <div className="flex flex-col min-h-screen p-6 bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400">Welcome back, Admin!</p>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 ">Welcome back, Admin!</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">
+        <button className="flex items-center px-4 py-2 bg-white border-gray-300  rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 ">
           <ArrowPathIcon className="w-5 h-5 mr-2" />
           Refresh
         </button>
@@ -180,13 +184,13 @@ const Dashboard = () => {
         {stats.map((stat, index) => (
           <div 
             key={index}
-            className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6"
+            className="bg-white  rounded-2xl border border-gray-300  shadow-sm p-6"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.title}</p>
-                <h3 className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{stat.value}</h3>
-                <p className="text-sm text-green-600 dark:text-green-400 mt-1">{stat.change}</p>
+                <p className="text-sm font-medium text-gray-600 ">{stat.title}</p>
+                <h3 className="text-2xl font-bold mt-1 text-gray-900 ">{stat.value}</h3>
+                <p className="text-sm text-green-600  mt-1">{stat.change}</p>
               </div>
               <div className={`p-3 rounded-full ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
@@ -199,18 +203,18 @@ const Dashboard = () => {
       {/* Charts Section */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
         {/* Revenue Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6 flex flex-col">
+        <div className="bg-white  rounded-2xl border border-gray-300 shadow-sm p-6 flex flex-col">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Revenue Overview</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Revenue Overview</h2>
             <div className="flex space-x-2">
               <button 
-                className={`px-3 py-1 rounded-lg text-sm ${activeChart === 'revenue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300'}`}
+                className={`px-3 py-1 rounded-lg text-sm ${activeChart === 'revenue' ? 'bg-blue-100 text-blue-600 ' : 'bg-gray-100 text-gray-600 '}`}
                 onClick={() => setActiveChart('revenue')}
               >
                 Revenue
               </button>
               <button 
-                className={`px-3 py-1 rounded-lg text-sm ${activeChart === 'orders' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300'}`}
+                className={`px-3 py-1 rounded-lg text-sm ${activeChart === 'orders' ? 'bg-blue-100 text-blue-600  ' : 'bg-gray-100 text-gray-600  '}`}
                 onClick={() => setActiveChart('orders')}
               >
                 Orders
@@ -223,8 +227,8 @@ const Dashboard = () => {
         </div>
 
         {/* Sales Distribution */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-gray-700 shadow-sm p-6 flex flex-col">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Sales Distribution</h2>
+        <div className="bg-white  rounded-2xl border border-gray-300  shadow-sm p-6 flex flex-col">
+          <h2 className="text-lg font-semibold text-gray-900  mb-6">Sales Distribution</h2>
           <div className="flex-1 min-h-0">
             {renderPieChart()}
           </div>

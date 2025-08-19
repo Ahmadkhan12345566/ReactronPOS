@@ -13,7 +13,7 @@ export const dummyProducts = [
     price: 7.0,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/beef-burger.png",
+    image: "assets/img/beef-burger.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -26,7 +26,7 @@ export const dummyProducts = [
     price: 3.25,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/choco-glaze-donut-peanut.png",
+    image: "assets/img/choco-glaze-donut-peanut.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -39,7 +39,7 @@ export const dummyProducts = [
     price: 2.75,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/choco-glaze-donut.png",
+    image: "assets/img/choco-glaze-donut.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -52,7 +52,7 @@ export const dummyProducts = [
     price: 3.5,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/cinnamon-roll.png",
+    image: "assets/img/cinnamon-roll.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -65,7 +65,7 @@ export const dummyProducts = [
     price: 4.0,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/coffee-latte.png",
+    image: "assets/img/coffee-latte.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -78,7 +78,7 @@ export const dummyProducts = [
     price: 2.5,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/croissant.png",
+    image: "assets/img/croissant.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -91,7 +91,7 @@ export const dummyProducts = [
     price: 4.25,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/ice-chocolate.png",
+    image: "assets/img/ice-chocolate.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -104,7 +104,7 @@ export const dummyProducts = [
     price: 1.99,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/ice-tea.png",
+    image: "assets/img/ice-tea.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -117,7 +117,7 @@ export const dummyProducts = [
     price: 4.5,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/matcha-latte.png",
+    image: "assets/img/matcha-latte.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -130,7 +130,7 @@ export const dummyProducts = [
     price: 5.5,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/sandwich.png",
+    image: "assets/img/sandwich.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -143,7 +143,7 @@ export const dummyProducts = [
     price: 6.75,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/sawarma.png",
+    image: "assets/img/sawarma.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -156,7 +156,7 @@ export const dummyProducts = [
     price: 2.95,
     unit: "Pc",
     qty: 100,
-    image: "./src/assets/img/red-glaze-donut.png",
+    image: "assets/img/red-glaze-donut.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2" 
   },
@@ -169,7 +169,7 @@ export const dummyProducts = [
     price: 4.25,
     unit: "Pc",
     qty: 85,
-    image: "./src/assets/img/cappuccino.png",
+    image: "assets/img/cappuccino.png",
     createdBy: "Manager",
     createdByAvatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
   },
@@ -182,7 +182,7 @@ export const dummyProducts = [
     price: 4.75,
     unit: "Pc",
     qty: 90,
-    image: "./src/assets/img/mocha.png",
+    image: "assets/img/mocha.png",
     createdBy: "Manager",
     createdByAvatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
   },
@@ -195,7 +195,7 @@ export const dummyProducts = [
     price: 3.25,
     unit: "Pc",
     qty: 75,
-    image: "./src/assets/img/espresso.png",
+    image: "assets/img/espresso.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
   },
@@ -208,7 +208,7 @@ export const dummyProducts = [
     price: 4.50,
     unit: "Pc",
     qty: 65,
-    image: "./src/assets/img/iced-coffee.png",
+    image: "assets/img/iced-coffee.png",
     createdBy: "Barista",
     createdByAvatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
   },
@@ -221,7 +221,7 @@ export const dummyProducts = [
     price: 5.25,
     unit: "Pc",
     qty: 55,
-    image: "./src/assets/img/fruit-smoothie.png",
+    image: "assets/img/fruit-smoothie.png",
     createdBy: "Barista",
     createdByAvatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
   },
@@ -234,7 +234,7 @@ export const dummyProducts = [
     price: 3.25,
     unit: "Pc",
     qty: 45,
-    image: "./src/assets/img/blueberry-muffin.png",
+    image: "assets/img/blueberry-muffin.png",
     createdBy: "Admin",
     createdByAvatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
   },
@@ -247,7 +247,7 @@ export const dummyProducts = [
     price: 2.25,
     unit: "Pc",
     qty: 120,
-    image: "./src/assets/img/chocolate-chip-cookie.png",
+    image: "assets/img/chocolate-chip-cookie.png",
     createdBy: "Manager",
     createdByAvatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
   },
@@ -260,7 +260,7 @@ export const dummyProducts = [
     price: 3.75,
     unit: "Pc",
     qty: 70,
-    image: "./src/assets/img/bagel.png",
+    image: "assets/img/bagel.png",
     createdBy: "Barista",
     createdByAvatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2"
   },

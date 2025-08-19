@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { PosProvider } from './context/PosContext';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
@@ -24,7 +24,7 @@ import SalesReport from './pages/SalesReport';
 function App() {
   return (
     <PosProvider>
-      <BrowserRouter>
+      <Router>
         <div className="flex flex-col h-screen">
           <Navbar className="h-[5%] min-h-[3rem]" />
           <div className="flex-1 overflow-hidden">
@@ -51,7 +51,7 @@ function App() {
           </Routes>
           </div>
         </div>
-      </BrowserRouter>
+      </Router>
     </PosProvider>
   );
 }
