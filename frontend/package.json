@@ -7,7 +7,8 @@
   "description": "Point of Sale System",
   "author": "Your Name <your.email@example.com>",
   "scripts": {
-    "dev": "concurrently \"vite --host\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev": "vite --host", 
+    "dev:electron": "concurrently \"vite --host\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
     "dist": "npm run build && electron-builder",
     "start": "electron .",

@@ -6,69 +6,65 @@ import {
   UserGroupIcon,
   CubeIcon,
 } from '@heroicons/react/24/outline';
- // Dummy data for dashboard cards
-  const stats = [
-    {
-      title: "Total Revenue",
-      value: "$45,231.89",
-      change: "+20.1% from last month",
-      icon: CurrencyDollarIcon,
-      color: "bg-green-100 text-green-600"
-    },
-    {
-      title: "Total Orders",
-      value: "1,235",
-      change: "+12.3% from last month",
-      icon: ShoppingBagIcon,
-      color: "bg-blue-100 text-blue-600"
-    },
-    {
-      title: "Total Customers",
-      value: "1,582",
-      change: "+18.4% from last month",
-      icon: UserGroupIcon,
-      color: "bg-purple-100 text-purple-600"
-    },
-    {
-      title: "Total Products",
-      value: "324",
-      change: "+5.2% from last month",
-      icon: CubeIcon,
-      color: "bg-amber-100 text-amber-600"
-    }
-  ];
 
-  
-  // Revenue data for bar chart
-  const revenueData = [
-    { month: 'Jan', revenue: 4000, orders: 120 },
-    { month: 'Feb', revenue: 3000, orders: 98 },
-    { month: 'Mar', revenue: 5000, orders: 150 },
-    { month: 'Apr', revenue: 2780, orders: 110 },
-    { month: 'May', revenue: 1890, orders: 85 },
-    { month: 'Jun', revenue: 2390, orders: 105 },
-    { month: 'Jul', revenue: 3490, orders: 130 },
-    { month: 'Aug', revenue: 4200, orders: 145 },
-    { month: 'Sep', revenue: 3800, orders: 125 },
-    { month: 'Oct', revenue: 4500, orders: 160 },
-    { month: 'Nov', revenue: 5200, orders: 180 },
-    { month: 'Dec', revenue: 6100, orders: 200 },
-  ];
+// Dummy data for dashboard cards
+const stats = [
+  {
+    title: "Total Revenue",
+    value: "$45,231.89",
+    change: "+20.1% from last month",
+    icon: CurrencyDollarIcon,
+    color: "bg-green-100 text-green-600"
+  },
+  {
+    title: "Total Orders",
+    value: "1,235",
+    change: "+12.3% from last month",
+    icon: ShoppingBagIcon,
+    color: "bg-blue-100 text-blue-600"
+  },
+  {
+    title: "Total Customers",
+    value: "1,582",
+    change: "+18.4% from last month",
+    icon: UserGroupIcon,
+    color: "bg-purple-100 text-purple-600"
+  },
+  {
+    title: "Total Products",
+    value: "324",
+    change: "+5.2% from last month",
+    icon: CubeIcon,
+    color: "bg-amber-100 text-amber-600"
+  }
+];
 
-  // Sales distribution data for pie chart
-  const salesDistribution = [
-    { category: 'Food', value: 45, color: '#4F46E5' },
-    { category: 'Cold Drinks', value: 25, color: '#10B981' },
-    { category: 'Hot Drinks', value: 30, color: '#F59E0B' },
-  ];
+// Revenue data for bar chart
+const revenueData = [
+  { month: 'Jan', revenue: 4000, orders: 120 },
+  { month: 'Feb', revenue: 3000, orders: 98 },
+  { month: 'Mar', revenue: 5000, orders: 150 },
+  { month: 'Apr', revenue: 2780, orders: 110 },
+  { month: 'May', revenue: 1890, orders: 85 },
+  { month: 'Jun', revenue: 2390, orders: 105 },
+  { month: 'Jul', revenue: 3490, orders: 130 },
+  { month: 'Aug', revenue: 4200, orders: 145 },
+  { month: 'Sep', revenue: 3800, orders: 125 },
+  { month: 'Oct', revenue: 4500, orders: 160 },
+  { month: 'Nov', revenue: 5200, orders: 180 },
+  { month: 'Dec', revenue: 6100, orders: 200 },
+];
 
+// Sales distribution data for pie chart
+const salesDistribution = [
+  { category: 'Food', value: 45, color: '#4F46E5' },
+  { category: 'Cold Drinks', value: 25, color: '#10B981' },
+  { category: 'Hot Drinks', value: 30, color: '#F59E0B' },
+];
 
-  
 const Dashboard = () => {
-  
   // Chart data
-    const [activeChart, setActiveChart] = useState('revenue');
-
+  const [activeChart, setActiveChart] = useState('revenue');
 
   // Function to render bar chart
   const renderBarChart = () => {
@@ -76,24 +72,31 @@ const Dashboard = () => {
     
     return (
       <div className="flex flex-col h-full">
-        <div className="flex-grow flex items-end justify-between px-4">
+        <div className="flex-grow flex items-end justify-between px-2 gap-1" style={{ minHeight: '240px' }}>
           {revenueData.map((data, index) => {
             const value = activeChart === 'revenue' ? data.revenue : data.orders;
-            const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
+            // Increase height calculation to make bars more visible
+            const height = Math.max((value / maxValue) * 100, 20); // Minimum 20% height
             
             return (
-              <div key={index} className="flex flex-col items-center h-full flex-1">
-                <div className="flex flex-col items-center justify-end h-full w-full max-w-[2rem] md:max-w-none">
-                  <div 
-                    className={`w-full rounded-t-md ${activeChart === 'revenue' ? 'bg-blue-500' : 'bg-green-500'}`}
-                    style={{ height: `${height}%` }}
-                  >
-                    <div className="text-white text-xs font-semibold text-center mt-1">
-                      {activeChart === 'revenue' ? `$${value}` : value}
+              <div key={index} className="flex flex-col items-center h-full flex-1 max-w-[28px]">
+                <div className="flex flex-col items-center justify-end h-full w-full">
+                  <div className="relative w-full">
+                    <div 
+                      className={`w-full rounded-t-md mx-auto ${activeChart === 'revenue' ? 'bg-blue-500' : 'bg-green-500'}`}
+                      style={{ 
+                        height: `${height}%`,
+                        width: '20px',
+                        minHeight: '25px' // Ensure even small values are more visible
+                      }}
+                    >
+                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold whitespace-nowrap">
+                        {activeChart === 'revenue' ? `$${value.toLocaleString()}` : value}
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500 mt-2">{data.month}</div>
+                <div className="text-xs text-gray-500 mt-2 text-center">{data.month}</div>
               </div>
             );
           })}
@@ -173,7 +176,7 @@ const Dashboard = () => {
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 ">Welcome back, Admin!</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-white border-gray-300  rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 ">
+        <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50">
           <ArrowPathIcon className="w-5 h-5 mr-2" />
           Refresh
         </button>
@@ -184,13 +187,13 @@ const Dashboard = () => {
         {stats.map((stat, index) => (
           <div 
             key={index}
-            className="bg-white  rounded-2xl border border-gray-300  shadow-sm p-6"
+            className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 ">{stat.title}</p>
-                <h3 className="text-2xl font-bold mt-1 text-gray-900 ">{stat.value}</h3>
-                <p className="text-sm text-green-600  mt-1">{stat.change}</p>
+                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                <h3 className="text-2xl font-bold mt-1 text-gray-900">{stat.value}</h3>
+                <p className="text-sm text-green-600 mt-1">{stat.change}</p>
               </div>
               <div className={`p-3 rounded-full ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
@@ -203,32 +206,32 @@ const Dashboard = () => {
       {/* Charts Section */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
         {/* Revenue Chart */}
-        <div className="bg-white  rounded-2xl border border-gray-300 shadow-sm p-6 flex flex-col">
+        <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold text-gray-900">Revenue Overview</h2>
             <div className="flex space-x-2">
               <button 
-                className={`px-3 py-1 rounded-lg text-sm ${activeChart === 'revenue' ? 'bg-blue-100 text-blue-600 ' : 'bg-gray-100 text-gray-600 '}`}
+                className={`px-3 py-1 rounded-lg text-sm ${activeChart === 'revenue' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
                 onClick={() => setActiveChart('revenue')}
               >
                 Revenue
               </button>
               <button 
-                className={`px-3 py-1 rounded-lg text-sm ${activeChart === 'orders' ? 'bg-blue-100 text-blue-600  ' : 'bg-gray-100 text-gray-600  '}`}
+                className={`px-3 py-1 rounded-lg text-sm ${activeChart === 'orders' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
                 onClick={() => setActiveChart('orders')}
               >
                 Orders
               </button>
             </div>
           </div>
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0" style={{ minHeight: '280px' }}>
             {renderBarChart()}
           </div>
         </div>
 
         {/* Sales Distribution */}
-        <div className="bg-white  rounded-2xl border border-gray-300  shadow-sm p-6 flex flex-col">
-          <h2 className="text-lg font-semibold text-gray-900  mb-6">Sales Distribution</h2>
+        <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 flex flex-col">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">Sales Distribution</h2>
           <div className="flex-1 min-h-0">
             {renderPieChart()}
           </div>
