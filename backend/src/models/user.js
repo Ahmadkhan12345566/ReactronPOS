@@ -1,6 +1,5 @@
-// models/user.js
 export default function UserModel(sequelize, DataTypes) {
-  return sequelize.define('User', {
+  const User = sequelize.define('User', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -12,7 +11,10 @@ export default function UserModel(sequelize, DataTypes) {
     phone: DataTypes.STRING,
     company: DataTypes.STRING,
     avatar: DataTypes.STRING,
-    role: DataTypes.STRING, // 'biller', 'admin', etc.
+    role: {
+      type: DataTypes.ENUM('admin', 'biller'),
+      defaultValue: 'biller'
+    },
     status: {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active'
@@ -22,4 +24,10 @@ export default function UserModel(sequelize, DataTypes) {
     tableName: 'users',
     timestamps: true
   });
+
+  User.associate = function(models) {
+    User.hasMany(models.Sale, { foreignKey: 'userId' });
+  };
+
+  return User;
 }

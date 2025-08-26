@@ -1,6 +1,6 @@
 // models/category.js
 export default function CategoryModel(sequelize, DataTypes) {
-  return sequelize.define('Category', {
+  const Category = sequelize.define('Category', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -16,4 +16,10 @@ export default function CategoryModel(sequelize, DataTypes) {
     tableName: 'categories',
     timestamps: true
   });
+
+  Category.associate = function(models) {
+    Category.hasMany(models.Product, { foreignKey: 'categoryId' });
+  };
+
+  return Category;
 }

@@ -1,13 +1,14 @@
-// src/models/index.js
+// Update models/index.js to include all models
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
-//Setup
+
 dotenv.config();
 
 const {
   DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME, NODE_ENV
 } = process.env;
- const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASS, {
+
+const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASS, {
   host: DB_HOST,
   port: DB_PORT ? Number(DB_PORT) : 3306,
   dialect: 'mysql',
@@ -17,9 +18,6 @@ const {
     min: 0,
     acquire: 30000,
     idle: 10000
-  },
-  dialectOptions: {
-    // e.g. support for timezone/charset if needed
   },
   define: {
     underscored: true,
@@ -38,8 +36,6 @@ export async function testConnection() {
   }
 }
 
-
-
 // Import all models
 import UserModel from './user.js';
 import CustomerModel from './customer.js';
@@ -51,9 +47,13 @@ import UnitModel from './unit.js';
 import SaleModel from './sale.js';
 import PurchaseModel from './purchase.js';
 import SaleReturnModel from './saleReturn.js';
-// (import any other model factories here)
+// import BillerModel from './biller.js';
+import OrderItemModel from './orderItem.js';
+import PurchaseItemModel from './purchaseItem.js';
+import ReturnItemModel from './returnItems.js';
+import ReportModel from './report.js';
 
-/* Initialize models (IMPORTANT: pass DataTypes as second arg) */
+// Initialize models
 const models = {
   User: UserModel(sequelize, Sequelize.DataTypes),
   Customer: CustomerModel(sequelize, Sequelize.DataTypes),
@@ -65,21 +65,21 @@ const models = {
   Sale: SaleModel(sequelize, Sequelize.DataTypes),
   Purchase: PurchaseModel(sequelize, Sequelize.DataTypes),
   SaleReturn: SaleReturnModel(sequelize, Sequelize.DataTypes),
-  // add others here...
+  // Biller: BillerModel(sequelize, Sequelize.DataTypes),
+  OrderItem: OrderItemModel(sequelize, Sequelize.DataTypes),
+  PurchaseItem: PurchaseItemModel(sequelize, Sequelize.DataTypes),
+  ReturnItem: ReturnItemModel(sequelize, Sequelize.DataTypes),
+  Report: ReportModel(sequelize, Sequelize.DataTypes),
 };
 
-/* If any models define `associate(models)` call them now */
+// Set up associations
 Object.values(models).forEach((model) => {
   if (typeof model.associate === 'function') {
     model.associate(models);
   }
 });
 
-/* Optional: if some of your model files attach associations as functions on the model
-   (e.g. model.associate = function(models) { ... }), the above will call them.
-*/
-
-/* Helpful exports */
+// Export everything
 export { sequelize, Sequelize, models };
 export const {
   User,
@@ -92,4 +92,9 @@ export const {
   Sale,
   Purchase,
   SaleReturn,
+  // Biller,
+  OrderItem,
+  PurchaseItem,
+  ReturnItem,
+  Report,
 } = models;

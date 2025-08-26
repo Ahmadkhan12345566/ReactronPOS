@@ -72,31 +72,27 @@ const Dashboard = () => {
     
     return (
       <div className="flex flex-col h-full">
-        <div className="flex-grow flex items-end justify-between px-2 gap-1" style={{ minHeight: '240px' }}>
+        <div className="flex-grow flex items-end justify-between px-4 gap-0.5">
           {revenueData.map((data, index) => {
             const value = activeChart === 'revenue' ? data.revenue : data.orders;
-            // Increase height calculation to make bars more visible
-            const height = Math.max((value / maxValue) * 100, 20); // Minimum 20% height
+            const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
             
             return (
-              <div key={index} className="flex flex-col items-center h-full flex-1 max-w-[28px]">
-                <div className="flex flex-col items-center justify-end h-full w-full">
-                  <div className="relative w-full">
-                    <div 
-                      className={`w-full rounded-t-md mx-auto ${activeChart === 'revenue' ? 'bg-blue-500' : 'bg-green-500'}`}
-                      style={{ 
-                        height: `${height}%`,
-                        width: '20px',
-                        minHeight: '25px' // Ensure even small values are more visible
-                      }}
-                    >
-                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold whitespace-nowrap">
-                        {activeChart === 'revenue' ? `$${value.toLocaleString()}` : value}
-                      </div>
+              <div key={index} className="flex flex-col items-center h-full flex-1">
+                <div className="flex flex-col items-center justify-end h-full w-full max-w-[32px] md:max-w-[32px]">
+                  <div 
+                    className={`w-full rounded-t-md ${activeChart === 'revenue' ? 'bg-blue-500' : 'bg-green-500'}`}
+                    style={{ 
+                      height: `${height}%`,
+                      minHeight: '2px'
+                    }}
+                  >
+                    <div className="text-white text-xs font-semibold text-center mt-1">
+                      {activeChart === 'revenue' ? `$${value}` : value}
                     </div>
                   </div>
                 </div>
-                <div className="text-xs text-gray-500 mt-2 text-center">{data.month}</div>
+                <div className="text-xs text-gray-500 mt-2">{data.month}</div>
               </div>
             );
           })}
@@ -224,7 +220,7 @@ const Dashboard = () => {
               </button>
             </div>
           </div>
-          <div className="flex-1 min-h-0" style={{ minHeight: '280px' }}>
+          <div className="flex-1 min-h-0">
             {renderBarChart()}
           </div>
         </div>

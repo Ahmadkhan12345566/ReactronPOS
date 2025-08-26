@@ -1,5 +1,5 @@
 export default function SaleReturnModel(sequelize, DataTypes) {
-  return sequelize.define('SaleReturn', {
+  const SaleReturn = sequelize.define('SaleReturn', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -21,4 +21,12 @@ export default function SaleReturnModel(sequelize, DataTypes) {
     tableName: 'sale_returns',
     timestamps: true
   });
+
+  SaleReturn.associate = function(models) {
+    SaleReturn.belongsTo(models.Customer, { foreignKey: 'customerId' });
+    SaleReturn.belongsTo(models.Sale, { foreignKey: 'saleId' });
+    SaleReturn.hasMany(models.ReturnItem, { foreignKey: 'returnId' });
+  };
+
+  return SaleReturn;
 }

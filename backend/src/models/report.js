@@ -1,12 +1,12 @@
 // models/report.js
 export default function ReportModel(sequelize, DataTypes) {
-  return sequelize.define('Report', {
+  const Report = sequelize.define('Report', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    type: DataTypes.STRING, // 'customer', 'purchase', 'due', etc.
+    type: DataTypes.STRING,
     reference: DataTypes.STRING,
     date: DataTypes.DATE,
     amount: DataTypes.DECIMAL(10, 2),
@@ -21,4 +21,11 @@ export default function ReportModel(sequelize, DataTypes) {
     tableName: 'reports',
     timestamps: true
   });
+
+  // Reports are typically generated from other data, so they may not need associations
+  Report.associate = function(models) {
+    // Add associations if needed in the future
+  };
+
+  return Report;
 }

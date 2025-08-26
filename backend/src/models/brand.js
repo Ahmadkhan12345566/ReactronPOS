@@ -1,6 +1,6 @@
 // models/brand.js
 export default function BrandModel(sequelize, DataTypes) {
-  return sequelize.define('Brand', {
+  const Brand = sequelize.define('Brand', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -16,4 +16,10 @@ export default function BrandModel(sequelize, DataTypes) {
     tableName: 'brands',
     timestamps: true
   });
+
+  Brand.associate = function(models) {
+    Brand.hasMany(models.Product, { foreignKey: 'brandId' });
+  };
+
+  return Brand;
 }

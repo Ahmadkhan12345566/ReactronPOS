@@ -48,7 +48,7 @@ const columns = [
   {
     accessorKey: 'price',
     header: 'Price',
-    cell: ({ getValue }) => `PKR ${getValue().toFixed(2)}`,
+    cell: ({ getValue }) => `PKR ${getValue()}`,
     size: 80,
   },
   {

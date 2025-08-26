@@ -1,6 +1,6 @@
 // models/customer.js
 export default function CustomerModel(sequelize, DataTypes) {
-  return sequelize.define('Customer', {
+  const Customer = sequelize.define('Customer', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -22,4 +22,11 @@ export default function CustomerModel(sequelize, DataTypes) {
     tableName: 'customers',
     timestamps: true
   });
+
+  Customer.associate = function(models) {
+    Customer.hasMany(models.Sale, { foreignKey: 'customerId' });
+    Customer.hasMany(models.SaleReturn, { foreignKey: 'customerId' });
+  };
+
+  return Customer;
 }

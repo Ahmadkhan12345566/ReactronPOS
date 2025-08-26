@@ -21,7 +21,16 @@ import PurchaseReport from './pages/PurchaseReport';
 import CustomerDueReport from './pages/CustomerDueReport';
 import CustomerReport from './pages/CustomerReport';
 import SalesReport from './pages/SalesReport';
+import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
+import { useEffect } from 'react';
 function App() {
+  useEffect(() => {
+  window.electronAPI?.onBackendError((message) => {
+    alert('Backend failed: ' + message);
+  });
+}, []);
+
   return (
     <PosProvider>
       <Router>
@@ -48,6 +57,8 @@ function App() {
             <Route path="/purchases/report" element={<PurchaseReport />} />
             <Route path="/customers/report/due" element={<CustomerDueReport />} />
             <Route path="/customers/report" element={<CustomerReport />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
           </Routes>
           </div>
         </div>

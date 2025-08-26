@@ -15,6 +15,7 @@
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
+    "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.3",
     "oracledb": "^6.8.0",
     "path": "^0.12.7",

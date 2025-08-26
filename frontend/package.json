@@ -7,7 +7,7 @@
   "description": "Point of Sale System",
   "author": "Your Name <your.email@example.com>",
   "scripts": {
-    "dev": "vite --host", 
+    "dev": "vite --host",
     "dev:electron": "concurrently \"vite --host\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
     "dist": "npm run build && electron-builder",
@@ -28,7 +28,7 @@
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-table": "^8.21.3",
     "daisyui": "^5.0.50",
-    "electron-updater": "^6.1.7",
+    "electron-updater": "^6.6.2",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "react": "^19.1.0",
@@ -68,11 +68,19 @@
       "electron.js",
       "preload.js"
     ],
+    "extraResources": [
+      {
+        "from": "../backend/src",
+        "to": "backend/src",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../backend/package.json",
+        "to": "backend/package.json"
+      }
+    ],
     "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ],
+      "target": ["nsis", "portable"],
       "icon": "build/icon.ico"
     },
     "mac": {
@@ -81,10 +89,7 @@
       "category": "public.app-category.business"
     },
     "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
+      "target": ["AppImage", "deb"],
       "icon": "build/icon.png",
       "category": "Office"
     },
