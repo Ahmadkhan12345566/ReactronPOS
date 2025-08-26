@@ -1,63 +1,153 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 
-
 const defaultOnSignUp = () => {
-  console.log("User signed in");
-  document.location.replace('/'); // Redirect to home page after sign in
+  console.log("User signed up");
+  document.location.replace('/'); // Redirect to home page after sign up
 }
-export default function SignUp({ onSignup={defaultOnSignUp} }) {
+
+export default function SignUp({ onSignup = defaultOnSignUp }) {
   const [userData, setUserData] = useState({
     name: '', email: '', password: '', role: 'biller'
   });
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const user = await api.post('/api/auth/signup', userData);
       onSignup(user);
     } catch (error) {
       console.error('Signup failed:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
-        <input
-          type="text"
-          placeholder="Name"
-          value={userData.name}
-          onChange={(e) => setUserData({...userData, name: e.target.value})}
-          className="w-full p-2 mb-3 border rounded"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={userData.email}
-          onChange={(e) => setUserData({...userData, email: e.target.value})}
-          className="w-full p-2 mb-3 border rounded"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={userData.password}
-          onChange={(e) => setUserData({...userData, password: e.target.value})}
-          className="w-full p-2 mb-3 border rounded"
-        />
-        <select
-          value={userData.role}
-          onChange={(e) => setUserData({...userData, role: e.target.value})}
-          className="w-full p-2 mb-3 border rounded"
-        >
-          <option value="biller">Biller</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button type="submit" className="w-full bg-green-500 text-white p-2 rounded">
-          Sign Up
-        </button>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+      <div className="w-full max-w-md">
+        {/* Logo/Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800">Create Account</h1>
+          <p className="text-gray-600 mt-2">Get started with our platform</p>
+        </div>
+
+        {/* Form Container with fixed height and scrolling */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-800 max-h-[calc(100vh-25rem)] overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-8">
+            <div className="space-y-5">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  placeholder="Enter your name"
+                  value={userData.name}
+                  onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={userData.email}
+                  onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="Create a password"
+                  value={userData.password}
+                  onChange={(e) => setUserData({ ...userData, password: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  id="role"
+                  value={userData.role}
+                  onChange={(e) => setUserData({ ...userData, role: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                >
+                  <option value="biller">Biller</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  className="h-4 w-4 text-black focus:ring-black border-gray-600 rounded"
+                  required
+                />
+                <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
+                  I agree to the <a href="#" className="text-black hover:text-gray-700">Terms</a> and <a href="#" className="text-black hover:text-gray-700">Privacy Policy</a>
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 px-4 bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors duration-200 flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating account...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
+              </button>
+            </div>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Already have an account?{' '}
+                <a href="/signin" className="font-medium text-black hover:text-gray-700">
+                  Sign in
+                </a>
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { models } from '../models/index.js';
 
 const router = express.Router();
 
-// Get all products
+// Get all products with associations
 router.get('/', async (req, res) => {
   try {
     const products = await models.Product.findAll({
@@ -14,7 +14,22 @@ router.get('/', async (req, res) => {
         { model: models.Unit, attributes: ['name'] }
       ]
     });
-    res.json(products);
+    
+    // Transform data to match frontend expectations
+    const transformedProducts = products.map(product => ({
+      id: product.id,
+      name: product.name,
+      category: product.Category ? product.Category.name : '',
+      brand: product.Brand ? product.Brand.name : '',
+      price: product.price,
+      unit: product.Unit ? product.Unit.name : '',
+      qty: product.qty,
+      image: product.image,
+      createdBy: product.createdBy,
+      createdByAvatar: product.createdByAvatar
+    }));
+    
+    res.json(transformedProducts);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

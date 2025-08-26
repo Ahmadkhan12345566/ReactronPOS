@@ -46,11 +46,6 @@ export default function CustomerDueReportList({ reports }) {
       )
     },
     {
-      accessorKey: 'code',
-      header: 'Code',
-      size: 80,
-    },
-    {
       accessorKey: 'customer',
       header: 'Customer',
       cell: ({ row }) => (
@@ -115,7 +110,7 @@ export default function CustomerDueReportList({ reports }) {
       const passesCustomer = customerFilter === 'All' || report.customer.name === customerFilter;
       const passesPaymentMethod = paymentMethodFilter === 'All';
       const passesPaymentStatus = paymentStatusFilter === 'All' || report.status === paymentStatusFilter;
-      const passesSearch = `${report.reference} ${report.code} ${report.customer.name} ${report.status}`
+      const passesSearch = `${report.reference} ${report.customer.name} ${report.status}`
                           .toLowerCase()
                           .includes(search.toLowerCase());
       

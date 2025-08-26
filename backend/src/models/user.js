@@ -5,7 +5,6 @@ export default function UserModel(sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
-    code: DataTypes.STRING,
     name: DataTypes.STRING,
     email: DataTypes.STRING,
     phone: DataTypes.STRING,

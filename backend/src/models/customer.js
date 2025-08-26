@@ -6,7 +6,6 @@ export default function CustomerModel(sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
-    code: DataTypes.STRING,
     name: DataTypes.STRING,
     email: DataTypes.STRING,
     phone: DataTypes.STRING,

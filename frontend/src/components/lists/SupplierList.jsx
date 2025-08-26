@@ -29,11 +29,6 @@ export default function SupplierList({ Suppliers, setShowForm }) {
   // Columns using helpers
   const columns = [
     selectColumn(),
-    {
-      accessorKey: 'code',
-      header: 'Code',
-      size: 100,
-    },
     imageColumn('name', 'Supplier', 'avatar'),
     {
       accessorKey: 'email',

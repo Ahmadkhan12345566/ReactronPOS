@@ -52,11 +52,6 @@ export default function CustomerReportList({ reports }) {
         )
       },
       {
-        accessorKey: 'code',
-        header: 'Code',
-        size: 80,
-      },
-      {
         accessorKey: 'customer',
         header: 'Customer',
         cell: ({ row }) => (
@@ -118,7 +113,7 @@ export default function CustomerReportList({ reports }) {
       
       // Search filter
       const searchFields =
-        `${report.reference} ${report.code} ${report.customer.name} ${report.paymentMethod} ${report.status}`;
+        `${report.reference} ${report.customer.name} ${report.paymentMethod} ${report.status}`;
         
       const passesSearch = searchFields
         .toLowerCase()

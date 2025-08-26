@@ -1,179 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import CustomerForm from '../components/CustomerForm';
 import PayForm from '../components/PayForm';
 import Receipt from "../components/Receipt";
-// ————————————————————————
-// Products (centralized “dummyProducts”)
-// ————————————————————————
-export const products = [
-  {
-    id:  1,
-    code: "FD001",
-    name: "Beef Burger",
-    category: "food",
-    brand: "CafeCo",
-    price: 7.0,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/beef-burger.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id:  2,
-    code: "FD002",
-    name: "Choco Glaze Donut Peanut",
-    category: "food",
-    brand: "CafeCo",
-    price: 3.25,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/choco-glaze-donut-peanut.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id:  3,
-    code: "FD003",
-    name: "Choco Glaze Donut",
-    category: "food",
-    brand: "CafeCo",
-    price: 2.75,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/choco-glaze-donut.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id:  4,
-    code: "FD004",
-    name: "Cinnamon Roll",
-    category: "food",
-    brand: "CafeCo",
-    price: 3.5,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/cinnamon-roll.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id:  5,
-    code: "FD005",
-    name: "Coffee Latte",
-    category: "hot",
-    brand: "CafeCo",
-    price: 4.0,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/coffee-latte.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id:  6,
-    code: "FD006",
-    name: "Croissant",
-    category: "food",
-    brand: "CafeCo",
-    price: 2.5,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/croissant.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id:  7,
-    code: "FD007",
-    name: "Ice Chocolate",
-    category: "cold",
-    brand: "CafeCo",
-    price: 4.25,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/ice-chocolate.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id:  8,
-    code: "FD008",
-    name: "Ice Tea",
-    category: "cold",
-    brand: "CafeCo",
-    price: 1.99,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/ice-tea.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id:  9,
-    code: "FD009",
-    name: "Matcha Latte",
-    category: "hot",
-    brand: "CafeCo",
-    price: 4.5,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/matcha-latte.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id: 10,
-    code: "FD010",
-    name: "Sandwich",
-    category: "food",
-    brand: "CafeCo",
-    price: 5.5,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/sandwich.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id: 11,
-    code: "FD011",
-    name: "Sawarma",
-    category: "food",
-    brand: "CafeCo",
-    price: 6.75,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/sawarma.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  },
-  {
-    id: 12,
-    code: "FD012",
-    name: "Red Glaze Donut",
-    category: "food",
-    brand: "CafeCo",
-    price: 2.95,
-    unit: "Pc",
-    qty: 100,
-    image: "assets/img/red-glaze-donut.png",
-    createdBy: "Admin",
-    createdByAvatar: "assets/img/users/user-default.jpg"
-  }
-];
-export const customers = [
-  { id: 'walk-in',   name: 'Walk-in Customer' },
-  { id: 'cust-001',  name: 'John Smith (VIP)',    phone: '555-1234' },
-  { id: 'cust-002',  name: 'Sarah Johnson',        phone: '555-5678' },
-  { id: 'cust-003',  name: 'Mike Wilson',          phone: '555-9012' },
-  { id: 'cust-004',  name: 'Emily Davis',          phone: '555-3456' },
-];
+import { api } from '../services/api';
+import { usePos } from '../context/PosContext';
 
 export default function POS() {
-  const [customersList, setCustomersList] = useState(customers);
+  const { currentUser } = usePos();
+  const [products, setProducts] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('walk-in');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -182,41 +18,154 @@ export default function POS() {
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [showPayForm, setShowPayForm] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const discount = 5.00;
   const tax = subtotal * 0.08;
   const total = subtotal + tax - discount;
+
+  // Fetch products and customers on component mount
+  useEffect(() => {
+    fetchProducts();
+    fetchCustomers();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get('/api/products');
+      setProducts(data);
+    } catch (err) {
+      setError('Failed to fetch products');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const data = await api.get('/api/customers');
+      // Add walk-in customer option
+      setCustomers([{ id: 'walk-in', name: 'Walk-in Customer' }, ...data]);
+    } catch (err) {
+      console.error('Failed to fetch customers:', err);
+    }
+  };
 
   const filteredProducts = products
     .filter(product => activeCategory === 'all' || product.category === activeCategory)
     .filter(product => product.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   function addToOrder(product) {
+    // Check if product has sufficient stock
+    if (product.qty <= 0) {
+      setError(`Insufficient stock for ${product.name}`);
+      return;
+    }
+
     setOrderItems(prev => {
       const exist = prev.find((item) => item.id === product.id);
-      if (exist) return prev.map((item) => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
-      else return [...prev, { ...product, qty: 1 }];
-    })
-  };
-
-  function clearAll() {
-    setSelectedCustomer(() => 'walk-in');
-    setSearchTerm(() => '');
-    setActiveCategory(() => 'all');
-    setOrderItems(() => []);
+      if (exist) {
+        // Check if we're exceeding available stock
+        if (exist.qty + 1 > product.qty) {
+          setError(`Only ${product.qty} units available for ${product.name}`);
+          return prev;
+        }
+        return prev.map((item) => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+      } else {
+        // Check if we're exceeding available stock
+        if (1 > product.qty) {
+          setError(`Only ${product.qty} units available for ${product.name}`);
+          return prev;
+        }
+        return [...prev, { 
+          ...product, 
+          qty: 1
+        }];
+      }
+    });
   }
-
-  function addQuantity(item) {
-    setOrderItems(orderItems.map((newItem) => newItem.id === item.id ? { ...newItem, qty: newItem.qty + 1 } : newItem));
+  function clearAll() {
+    setSelectedCustomer('walk-in');
+    setSearchTerm('');
+    setActiveCategory('all');
+    setOrderItems([]);
+    setError(null);
   }
 
   function removeQuantity(item) {
-    setOrderItems(orderItems.map((newItem) => newItem.id === item.id ? { ...newItem, qty: newItem.qty - 1 } : newItem)
-      .filter(newItem => newItem.qty !== 0));
+    setOrderItems(orderItems.map((newItem) => 
+      newItem.id === item.id ? { ...newItem, quantity: newItem.quantity - 1 } : newItem
+    ).filter(newItem => newItem.quantity !== 0));
   }
+
+  const processOrder = async (paymentData) => {
+    try {
+      // Validate inventory before processing
+      for (const item of orderItems) {
+        const product = products.find(p => p.id === item.id);
+        if (!product || product.quantity < item.quantity) {
+          throw new Error(`Insufficient stock for ${item.name}. Available: ${product ? product.quantity : 0}, Requested: ${item.quantity}`);
+        }
+      }
+
+      // Prepare order data
+      const orderData = {
+        customerId: selectedCustomer === 'walk-in' ? null : selectedCustomer,
+        userId: currentUser?.id,
+        items: orderItems.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          discount: 0, // You can add discount logic if needed
+          subtotal: item.price * item.quantity
+        })),
+        subtotal,
+        discount,
+        tax,
+        total,
+        paymentMethod: paymentData.method,
+        amountTendered: paymentData.amountTendered,
+        change: paymentData.change
+      };
+
+      // Send to backend
+      const result = await api.post('/api/sales', orderData);
+      
+      // Update local product quantities
+      const updatedProducts = products.map(product => {
+        const orderedItem = orderItems.find(item => item.id === product.id);
+        if (orderedItem) {
+          return { ...product, quantity: product.quantity - orderedItem.quantity };
+        }
+        return product;
+      });
+      
+      setProducts(updatedProducts);
+      setShowReceipt(true);
+      return result;
+    } catch (err) {
+      setError(err.message || 'Failed to process order');
+      throw err;
+    }
+  };
+
+  if (loading) return <div className="p-6">Loading products...</div>;
 
   return (
     <div className="h-full overflow-auto flex-1 bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+          <span className="block sm:inline">{error}</span>
+          <button onClick={() => setError(null)} className="absolute top-0 right-0 p-2">
+            <span className="text-red-700">×</span>
+          </button>
+        </div>
+      )}
+      
       <div className="mx-auto flex flex-col lg:flex-row gap-6 h-full">
         {/* Order Section - Left Side */}
         <div className="w-full lg:w-[27.5%] h-full bg-white rounded-2xl border border-gray-800 shadow-lg flex flex-col">
@@ -232,7 +181,7 @@ export default function POS() {
                     value={selectedCustomer}
                     onChange={(e) => setSelectedCustomer(e.target.value)}
                   >
-                    {customersList.map((customer) => (
+                    {customers.map((customer) => (
                       <option key={customer.id} value={customer.id}>
                         {customer.name} {customer.phone ? `(${customer.phone})` : ''}
                       </option>
@@ -308,9 +257,9 @@ export default function POS() {
                       </div>
 
                       {/* Price */}
-                      <div className="text-gray-700 font-semibold">${item.price.toFixed(2)}</div>
+                      <div className="text-gray-700 font-semibold">${item.price}</div>
 
-                      {/* Qty Controls */}
+                      {/* quantity Controls */}
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => removeQuantity(item)}
@@ -318,7 +267,7 @@ export default function POS() {
                         >
                           –
                         </button>
-                        <span className="font-semibold">{item.qty}</span>
+                        <span className="font-semibold">{item.quantity}</span>
                         <button
                           onClick={() => addQuantity(item)}
                           className="w-6 h-6 flex items-center justify-center bg-gray-200 text-gray-800 rounded-full text-lg"
@@ -330,7 +279,7 @@ export default function POS() {
 
                       {/* Subtotal */}
                       <div className="text-gray-700 font-semibold">
-                        ${(item.price * item.qty).toFixed(2)}
+                        ${(item.price * item.quantity)}
                       </div>
 
                       {/* Delete Icon */}
@@ -357,20 +306,20 @@ export default function POS() {
               <div className="px-4 py-2 rounded-xl bg-white border border-gray-400">
                 {/* <div className="flex justify-between mb-2">
                   <span className="text-gray-700">Subtotal</span>
-                  <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                  <span className="font-semibold">${subtotal}</span>
                 </div> */}
                 <div className="flex justify-between mb-1">
                   <span className="text-gray-700">Discount</span>
-                  <span className="text-gray-700 font-semibold">-${discount.toFixed(2)}</span>
+                  <span className="text-gray-700 font-semibold">-${discount}</span>
                 </div>
                 <div className="flex justify-between mb-1">
                   <span className="text-gray-700">Tax (8%)</span>
-                  <span className="font-semibold">${tax.toFixed(2)}</span>
+                  <span className="font-semibold">${tax}</span>
                 </div>
                 <div className="border-t border-gray-400 pt-1 flex justify-between">
                   <span className="font-bold text-lg text-gray-900">Total</span>
                   <span className="font-bold text-lg text-gray-900">
-                    ${total.toFixed(2)}
+                    ${total}
                   </span>
                 </div>
               </div>
@@ -453,7 +402,7 @@ export default function POS() {
                         </div>
                       <div className="flex justify-between items-center mt-1">
                         <div className="text-gray-900 font-semibold text-sm">
-                          ${product.price.toFixed(2)}
+                          ${product.price}
                         </div>
                         <div className="flex space-x-1">
                           <span className="bg-gray-300 text-gray-900 text-[11px] px-2 py-0.5 rounded-full">
@@ -485,31 +434,30 @@ export default function POS() {
           isOpen={showCustomerForm}
           onClose={() => setShowCustomerForm(false)}
           onAddCustomer={(customer) => {
-            setCustomersList(prev => [...prev, customer]);
+            setCustomers(prev => [...prev, customer]);
             setSelectedCustomer(customer.id);
           }}
-          
         />
       )}
 
-          {showPayForm && (
-          <PayForm 
-            isOpen={showPayForm}
-            onClose={() => setShowPayForm(false)}
-            total={total}
-            onPaySubmit={(paymentData) => {
-              console.log('Payment data:', paymentData);
-              setShowPayForm(false); // Close payment form
-              setShowReceipt(true);  // Show receipt
-            }}
-          />
-        )}
-        {showReceipt && (
-          <Receipt
+      {showPayForm && (
+        <PayForm 
+          isOpen={showPayForm}
+          onClose={() => setShowPayForm(false)}
+          total={total}
+          onPaySubmit={processOrder}
+        />
+      )}
+
+      {showReceipt && (
+        <Receipt
           isOpen={showReceipt}
-          onClose={() => setShowReceipt(false)}
+          onClose={() => {
+            setShowReceipt(false);
+            clearAll();
+          }}
           customerName={
-            customersList.find(c => c.id === selectedCustomer)?.name
+            customers.find(c => c.id === selectedCustomer)?.name || 'Walk-in Customer'
           }
           customerId={selectedCustomer}
           orderItems={orderItems}
@@ -517,8 +465,9 @@ export default function POS() {
           discount={discount}
           tax={tax}
           total={total}
+          biller={currentUser?.name || 'System'}
         />
-        )}
+      )}
     </div>
   );
 }

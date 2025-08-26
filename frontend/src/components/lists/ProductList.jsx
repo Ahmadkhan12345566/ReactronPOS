@@ -29,11 +29,6 @@ export default function ProductList({ products, setShowForm }) {
 const columns = [
   selectColumn(),
   indexColumn(),
-  {
-    accessorKey: 'code',
-    header: 'SKU',
-    size: 80,
-  },
   imageColumn('name', 'Product Name', 'image'),
   {
     accessorKey: 'category',

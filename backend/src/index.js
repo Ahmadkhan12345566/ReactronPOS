@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url';
 import { testConnection } from './models/index.js';
 import { sequelize } from './models/index.js';
 import productsRoute from "./routes/products.js";
+import customersRoute from './routes/customers.js';
+import salesRoute from './routes/sales.js';
 import { seedDatabase } from './initialData.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +22,8 @@ export async function startServer() {
   app.get('/health', (req, res) => res.send('OK'));
   app.use('/api/products', productsRoute);
   app.use('/api/auth', (await import('./routes/auth.js')).default);
+  app.use('/api/sales', salesRoute);
+  app.use('/api/customers', customersRoute);
 
   app.use((err, req, res, next) => {
     console.error('Server error:', err);
@@ -42,7 +46,18 @@ export async function startServer() {
 }
 
 
+const isDev = process.env.NODE_ENV === 'development' || process.env.RUN_SERVER === 'true';
 
+if (isDev) {
+  startServer()
+    .then(() => console.log('Dev server started'))
+    .catch(err => {
+      console.error('Failed to start dev server', err);
+      process.exit(1);
+    });
+} else {
+  console.log('Skipping dev server startup (NODE_ENV != development)');
+}
 
 
 

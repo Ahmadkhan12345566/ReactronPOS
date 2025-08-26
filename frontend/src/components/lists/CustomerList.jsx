@@ -23,11 +23,6 @@ export default function CustomerList({ customers, setShowForm }) {
   // Columns configuration using helpers
   const columns = [
     selectColumn(),
-    {
-      accessorKey: 'code',
-      header: 'Code',
-      size: 100,
-    },
     imageColumn('name', 'Customer', 'avatar'),
     {
       accessorKey: 'email',

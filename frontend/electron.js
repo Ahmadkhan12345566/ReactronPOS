@@ -79,7 +79,10 @@ app.whenReady().then(()=> {
     console.error('Failed to start backend:', err);
     const win = createWindow();
 
-    win.webContents.once('did-finish-load', () => {
+     win.webContents.once('did-finish-load', () => {
+      win.webContents.executeScript(`
+        alert('Backend failed to start: ${err.message}');
+      `);
       win.webContents.send('backend-error', err.message || 'Unknown error');
     });
   });

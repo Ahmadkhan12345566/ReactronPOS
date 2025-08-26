@@ -5,7 +5,6 @@ export default function ProductModel(sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
-    code: DataTypes.STRING,
     name: DataTypes.STRING,
     description: DataTypes.TEXT,
     price: DataTypes.DECIMAL(10, 2),
@@ -17,9 +16,6 @@ export default function ProductModel(sequelize, DataTypes) {
       defaultValue: 'Active'
     },
     image: DataTypes.STRING,
-    category: DataTypes.STRING, // Added to match dummy data
-    brand: DataTypes.STRING,    // Added to match dummy data
-    unit: DataTypes.STRING,     // Added to match dummy data
     createdBy: DataTypes.STRING, // Added to match dummy data
     createdByAvatar: DataTypes.STRING // Added to match dummy data
   }, {

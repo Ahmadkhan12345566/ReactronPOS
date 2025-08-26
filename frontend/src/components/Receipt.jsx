@@ -10,7 +10,8 @@ export default function Receipt({
   discount,
   tax,
   shipping = 0,
-  total
+  total,
+   biller = "admin"
 }) {
   const [invoiceNo, setInvoiceNo] = useState('');
   const [currentDate, setCurrentDate] = useState('');
@@ -75,6 +76,14 @@ export default function Receipt({
 
           {/* invoice details */}
           <div className="grid grid-cols-2 gap-3 mb-6 text-sm print:text-xs">
+            <div>
+              <div className="text-gray-600">Customer:</div>
+              <div className="font-medium">{customerName}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-gray-600">Biller:</div>
+              <div className="font-medium">{biller}</div>
+            </div>
             <div>
               <div className="text-gray-600">Customer:</div>
               <div className="font-medium">{customerName}</div>

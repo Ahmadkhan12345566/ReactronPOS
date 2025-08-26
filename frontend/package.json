@@ -77,6 +77,10 @@
       {
         "from": "../backend/package.json",
         "to": "backend/package.json"
+      },
+      {
+        "from": "../node_modules",
+        "to": "/node_modules"
       }
     ],
     "win": {
