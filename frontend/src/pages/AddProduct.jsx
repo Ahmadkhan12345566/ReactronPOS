@@ -3,6 +3,8 @@ import { NavLink } from 'react-router-dom';
 import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -23,6 +25,7 @@ const AddProduct = () => {
     customFields: false
   });
   
+  const navigate = useNavigate();  
   const [productType, setProductType] = useState('single');
   const [selectedImages, setSelectedImages] = useState([]);
   const [customFields, setCustomFields] = useState({
@@ -30,15 +33,24 @@ const AddProduct = () => {
     manufacturer: false,
     expiry: false
   });
-
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  try {
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    console.log(formData);
+    await api.post('/api/products', data);
+    navigate('/products'); // Note: navigate instead of navigate.push
+  } catch (error) {
+    console.error('Error creating product:', error);
+  }
+};
   const toggleAccordion = (section) => {
-    setAccordion(prev => {
-      const newState = {};
-      Object.keys(prev).forEach(key => {
-        newState[key] = key === section ? !prev[section] : false;
-      });
-      return newState;
-    });
+    setAccordion(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
 
   const handleImageUpload = (e) => {
@@ -73,7 +85,7 @@ const AddProduct = () => {
         }
       />
 
-      <form className="bg-white rounded-xl shadow-sm p-6 flex flex-col min-h-0 h-full">
+      <form className="bg-white rounded-xl shadow-sm p-6 flex flex-col min-h-0 h-full" onSubmit={handleSubmit}>
         <div className="flex-1 min-h-0 overflow-y-auto">
           <Accordion 
             title="Product Information"
@@ -86,7 +98,7 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Store <span className="text-red-500">*</span>
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <select name="store" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                   <option>Select</option>
                   <option>Electro Mart</option>
                   <option>Quantum Gadgets</option>
@@ -98,7 +110,7 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Warehouse <span className="text-red-500">*</span>
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <select name="warehouse" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                   <option>Select</option>
                   <option>Lavish Warehouse</option>
                   <option>Quaint Warehouse</option>
@@ -111,6 +123,7 @@ const AddProduct = () => {
                   Product Name <span className="text-red-500">*</span>
                 </label>
                 <input 
+                  name="name"
                   type="text" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter product name"
@@ -122,6 +135,7 @@ const AddProduct = () => {
                   Slug <span className="text-red-500">*</span>
                 </label>
                 <input 
+                  name="slug"
                   type="text" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter slug"
@@ -134,11 +148,12 @@ const AddProduct = () => {
                 </label>
                 <div className="flex">
                   <input 
+                    name="sku"
                     type="text" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-l-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter SKU"
                   />
-                  <button className="px-4 py-2 bg-black text-white rounded-r-lg hover:bg-blue-700">
+                  <button type="button" className="px-4 py-2 bg-black text-white rounded-r-lg hover:bg-blue-700">
                     Generate
                   </button>
                 </div>
@@ -148,10 +163,10 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Selling Type <span className="text-red-500">*</span>
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                  <option>Select</option>
-                  <option>Online</option>
-                  <option>POS</option>
+                <select name="sellingType" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select</option>
+                  <option value="Online">Online</option>
+                  <option value="POS">POS</option>
                 </select>
               </div>
               
@@ -160,16 +175,16 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700">
                     Category <span className="text-red-500">*</span>
                   </label>
-                  <button className="flex items-center text-black text-sm">
+                  <button type="button" className="flex items-center text-black text-sm">
                     <PlusCircleIcon className="w-4 h-4 mr-1" />
                     Add New
                   </button>
                 </div>
-                <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                  <option>Select</option>
-                  <option>Food</option>
-                  <option>Beverages</option>
-                  <option>Electronics</option>
+                <select name="category" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select</option>
+                  <option value="Food">Food</option>
+                  <option value="Beverages">Beverages</option>
+                  <option value="Electronics">Electronics</option>
                 </select>
               </div>
               
@@ -177,11 +192,11 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Sub Category <span className="text-red-500">*</span>
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                  <option>Select</option>
-                  <option>Main Course</option>
-                  <option>Desserts</option>
-                  <option>Snacks</option>
+                <select name="subCategory" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select</option>
+                  <option value="Main Course">Main Course</option>
+                  <option value="Desserts">Desserts</option>
+                  <option value="Snacks">Snacks</option>
                 </select>
               </div>
               
@@ -189,11 +204,11 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Brand <span className="text-red-500">*</span>
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                  <option>Select</option>
-                  <option>CafeCo</option>
-                  <option>PremiumBrand</option>
-                  <option>EcoGoods</option>
+                <select name="brand" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select</option>
+                  <option value="CafeCo">CafeCo</option>
+                  <option value="PremiumBrand">PremiumBrand</option>
+                  <option value="EcoGoods">EcoGoods</option>
                 </select>
               </div>
               
@@ -201,11 +216,11 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Unit <span className="text-red-500">*</span>
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                  <option>Select</option>
-                  <option>Pc</option>
-                  <option>Kg</option>
-                  <option>L</option>
+                <select name="unit" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select</option>
+                  <option value="Pc">Pc</option>
+                  <option value="Kg">Kg</option>
+                  <option value="L">L</option>
                 </select>
               </div>
               
@@ -213,11 +228,11 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Barcode Symbology <span className="text-red-500">*</span>
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                  <option>Select</option>
-                  <option>Code 128</option>
-                  <option>Code 39</option>
-                  <option>UPC-A</option>
+                <select name="barcodeSymbology" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select</option>
+                  <option value="Code 128">Code 128</option>
+                  <option value="Code 39">Code 39</option>
+                  <option value="UPC-A">UPC-A</option>
                 </select>
               </div>
               
@@ -227,11 +242,12 @@ const AddProduct = () => {
                 </label>
                 <div className="flex">
                   <input 
+                    name="itemBarcode"
                     type="text" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-l-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter barcode"
                   />
-                  <button className="px-4 py-2 bg-black text-white rounded-r-lg hover:bg-blue-700">
+                  <button type="button" className="px-4 py-2 bg-black text-white rounded-r-lg hover:bg-blue-700">
                     Generate
                   </button>
                 </div>
@@ -243,6 +259,7 @@ const AddProduct = () => {
                 Description
               </label>
               <textarea 
+                name="description"
                 className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 min-h-[150px]"
                 placeholder="Enter product description"
               ></textarea>
@@ -265,6 +282,7 @@ const AddProduct = () => {
                   <input
                     type="radio"
                     name="productType"
+                    value="single"
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                     checked={productType === 'single'}
                     onChange={() => setProductType('single')}
@@ -275,6 +293,7 @@ const AddProduct = () => {
                   <input
                     type="radio"
                     name="productType"
+                    value="variable"
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                     checked={productType === 'variable'}
                     onChange={() => setProductType('variable')}
@@ -291,6 +310,7 @@ const AddProduct = () => {
                     Quantity <span className="text-red-500">*</span>
                   </label>
                   <input 
+                    name="qty"
                     type="number" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter quantity"
@@ -302,6 +322,7 @@ const AddProduct = () => {
                     Price <span className="text-red-500">*</span>
                   </label>
                   <input 
+                    name="price"
                     type="number" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter price"
@@ -312,10 +333,10 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tax Type <span className="text-red-500">*</span>
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    <option>Select</option>
-                    <option>Exclusive</option>
-                    <option>Inclusive</option>
+                  <select name="taxType" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select</option>
+                    <option value="Exclusive">Exclusive</option>
+                    <option value="Inclusive">Inclusive</option>
                   </select>
                 </div>
                 
@@ -323,11 +344,11 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tax <span className="text-red-500">*</span>
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    <option>Select</option>
-                    <option>IGST (8%)</option>
-                    <option>GST (5%)</option>
-                    <option>SGST (4%)</option>
+                  <select name="tax" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select</option>
+                    <option value="8">IGST (8%)</option>
+                    <option value="5">GST (5%)</option>
+                    <option value="4">SGST (4%)</option>
                   </select>
                 </div>
                 
@@ -335,10 +356,10 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Discount Type <span className="text-red-500">*</span>
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    <option>Select</option>
-                    <option>Percentage</option>
-                    <option>Fixed</option>
+                  <select name="discountType" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select</option>
+                    <option value="Percentage">Percentage</option>
+                    <option value="Fixed">Fixed</option>
                   </select>
                 </div>
                 
@@ -347,6 +368,7 @@ const AddProduct = () => {
                     Discount Value <span className="text-red-500">*</span>
                   </label>
                   <input 
+                    name="discountValue"
                     type="number" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter discount"
@@ -358,6 +380,7 @@ const AddProduct = () => {
                     Quantity Alert <span className="text-red-500">*</span>
                   </label>
                   <input 
+                    name="quantityAlert"
                     type="number" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter alert quantity"
@@ -398,21 +421,21 @@ const AddProduct = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       <tr>
                         <td className="px-4 py-3">
-                          <input 
+                          <input name="variantAttribute1"
                             type="text" 
                             className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                             defaultValue="Color"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input 
+                          <input name="variantValue1"
                             type="text" 
                             className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                             defaultValue="Red"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input 
+                          <input name="variantSKU1"
                             type="text" 
                             className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                             defaultValue="FD001-RED"
@@ -421,7 +444,7 @@ const AddProduct = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center">
                             <button className="px-2 py-1 bg-gray-200 rounded-l">-</button>
-                            <input 
+                            <input name="variantQuantity1"
                               type="number" 
                               className="w-16 px-2 py-1 border-y border-gray-600 text-center"
                               defaultValue="10"
@@ -430,7 +453,7 @@ const AddProduct = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <input 
+                          <input name="variantPrice1"
                             type="number" 
                             className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                             defaultValue="7.99"
@@ -447,21 +470,21 @@ const AddProduct = () => {
                       </tr>
                       <tr>
                         <td className="px-4 py-3">
-                          <input 
+                          <input name="variantAttribute2"
                             type="text" 
                             className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                             defaultValue="Color"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input 
+                          <input name="variantValue2"
                             type="text" 
                             className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                             defaultValue="Blue"
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <input 
+                          <input name="variantSKU2"
                             type="text" 
                             className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                             defaultValue="FD001-BLUE"
@@ -470,7 +493,7 @@ const AddProduct = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center">
                             <button className="px-2 py-1 bg-gray-200 rounded-l">-</button>
-                            <input 
+                            <input name="variantQuantity2"
                               type="number" 
                               className="w-16 px-2 py-1 border-y border-gray-600 text-center"
                               defaultValue="15"
@@ -479,7 +502,7 @@ const AddProduct = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <input 
+                          <input name="variantPrice2"
                             type="number" 
                             className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                             defaultValue="7.99"
@@ -519,7 +542,7 @@ const AddProduct = () => {
                   </p>
                   <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
                 </div>
-                <input 
+                <input name="productImages"
                   type="file" 
                   className="hidden" 
                   multiple 
@@ -561,7 +584,7 @@ const AddProduct = () => {
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-600 mb-6">
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center">
-                  <input 
+                  <input name="warranties"
                     type="checkbox" 
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 rounded"
                     checked={customFields.warranties}
@@ -570,7 +593,7 @@ const AddProduct = () => {
                   <span className="ml-2 text-gray-700">Warranties</span>
                 </label>
                 <label className="flex items-center">
-                  <input 
+                  <input name="manufacturer"
                     type="checkbox" 
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 rounded"
                     checked={customFields.manufacturer}
@@ -579,7 +602,7 @@ const AddProduct = () => {
                   <span className="ml-2 text-gray-700">Manufacturer</span>
                 </label>
                 <label className="flex items-center">
-                  <input 
+                  <input name="expiry"
                     type="checkbox" 
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 rounded"
                     checked={customFields.expiry}
@@ -610,7 +633,7 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Manufacturer <span className="text-red-500">*</span>
                   </label>
-                  <input 
+                  <input name="manufacturerName"
                     type="text" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter manufacturer"
@@ -623,7 +646,7 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Manufactured Date <span className="text-red-500">*</span>
                   </label>
-                  <input 
+                  <input name="manufacturedDate"
                     type="date" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -635,7 +658,7 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Expiry Date <span className="text-red-500">*</span>
                   </label>
-                  <input 
+                  <input name="expiryDate"
                     type="date" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   />

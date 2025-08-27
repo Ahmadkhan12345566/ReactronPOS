@@ -1,9 +1,10 @@
 // routes/products.js
 import express from 'express';
 import { models } from '../models/index.js';
-
+import multer from 'multer';
+import csv from 'csv-parser';
 const router = express.Router();
-
+const upload = multer({ dest: 'uploads/' });
 // Get all products with associations
 router.get('/', async (req, res) => {
   try {
@@ -36,10 +37,26 @@ router.get('/', async (req, res) => {
 });
 
 // Create a new product
-router.post('/', async (req, res) => {
+router.post('/', upload.single('csvFile'), async (req, res) => {
   try {
-    const product = await models.Product.create(req.body);
-    res.status(201).json(product);
+    let products = [];
+    
+    if (req.file) {
+      // Handle CSV import
+      const results = [];
+      fs.createReadStream(req.file.path)
+        .pipe(csv())
+        .on('data', (data) => results.push(data))
+        .on('end', async () => {
+          products = await models.Product.bulkCreate(results);
+          fs.unlinkSync(req.file.path); // Delete temp file
+          res.status(201).json(products);
+        });
+    } else {
+      // Handle regular form submission
+      const product = await models.Product.create(req.body);
+      res.status(201).json(product);
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -58,7 +75,24 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
+// Add this to your existing products.js routes
+router.post('/import', async (req, res) => {
+  try {
+    // Handle file upload and CSV parsing here
+    // You might want to use a library like multer for file handling
+    // and csv-parser for parsing the CSV file
+    
+    const { file } = req.files; // Assuming you're using multer
+    const { product, category, subCategory, createdBy, description } = req.body;
+    
+    // Process the CSV file and create products
+    // This is a simplified example
+    
+    res.status(201).json({ message: 'Products imported successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 // Delete a product
 router.delete('/:id', async (req, res) => {
   try {

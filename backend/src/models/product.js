@@ -5,7 +5,10 @@ export default function ProductModel(sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
-    name: DataTypes.STRING,
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     description: DataTypes.TEXT,
     price: DataTypes.DECIMAL(10, 2),
     cost: DataTypes.DECIMAL(10, 2),
@@ -16,8 +19,30 @@ export default function ProductModel(sequelize, DataTypes) {
       defaultValue: 'Active'
     },
     image: DataTypes.STRING,
-    createdBy: DataTypes.STRING, // Added to match dummy data
-    createdByAvatar: DataTypes.STRING // Added to match dummy data
+    createdBy: DataTypes.STRING,
+    createdByAvatar: DataTypes.STRING,
+    // New fields from AddProduct form
+    store: DataTypes.STRING,
+    warehouse: DataTypes.STRING,
+    slug: DataTypes.STRING,
+    sku: DataTypes.STRING,
+    sellingType: DataTypes.ENUM('Online', 'POS'),
+    category: DataTypes.STRING,
+    subCategory: DataTypes.STRING,
+    brand: DataTypes.STRING,
+    unit: DataTypes.STRING,
+    barcodeSymbology: DataTypes.STRING,
+    itemBarcode: DataTypes.STRING,
+    productType: DataTypes.ENUM('single', 'variable'),
+    taxType: DataTypes.ENUM('Exclusive', 'Inclusive'),
+    tax: DataTypes.DECIMAL(5, 2),
+    discountType: DataTypes.ENUM('Percentage', 'Fixed'),
+    discountValue: DataTypes.DECIMAL(10, 2),
+    quantityAlert: DataTypes.INTEGER,
+    warranties: DataTypes.TEXT,
+    manufacturer: DataTypes.STRING,
+    manufacturedDate: DataTypes.DATE,
+    expiryDate: DataTypes.DATE
   }, {
     tableName: 'products',
     timestamps: true

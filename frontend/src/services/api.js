@@ -29,6 +29,7 @@ export const api = {
 
   async post(endpoint, data) {
     try {
+      console.log('Posting to', endpoint, 'with data', data);
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
@@ -58,7 +59,18 @@ export const api = {
       throw error;
     }
   },
-
+  async postFormData(endpoint, data) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        body: data, // No Content-Type header, let browser set it
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('API POST FormData Error:', error);
+      throw error;
+    }
+  },
   async delete(endpoint) {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {

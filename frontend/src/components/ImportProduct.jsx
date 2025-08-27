@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-
+import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 const ImportProduct = ({ showForm, setShowForm }) => {
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -9,7 +11,28 @@ const ImportProduct = ({ showForm, setShowForm }) => {
       setSelectedFile(file);
     }
   };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const formData = new FormData();
+      formData.append('csvFile', selectedFile);
+      formData.append('product', e.target.product.value);
+      // Add other form fields as needed
 
+      await api.post('/products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      setShowForm(false);
+      navigate.push('/products'); // Redirect after success
+    } catch (error) {
+      console.error('Error importing products:', error);
+      // Handle error
+    }
+  };
   return (
     <>
     {showForm && 
@@ -30,7 +53,7 @@ const ImportProduct = ({ showForm, setShowForm }) => {
           
           {/* Modal Body - Made scrollable */}
           <div className="p-6 overflow-y-auto flex-grow"> {/* Added overflow and flex-grow */}
-            <form className="space-y-6"> {/* Moved space-y-6 here */}
+            <form className="space-y-6" onSubmit={handleSubmit}> {/* Moved space-y-6 here */}
               <div className="space-y-6">
                 {/* Product Select */}
                 <div>

@@ -30,13 +30,10 @@ const AddPurchase = () => {
   });
 
   const toggleAccordion = (section) => {
-    setAccordion((prev) => {
-      const newState = {};
-      Object.keys(prev).forEach(key => {
-        newState[key] = key === section ? !prev[section] : false;
-      });
-      return newState;
-    });
+    setAccordion(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
 
   const handleChange = (e) => {
