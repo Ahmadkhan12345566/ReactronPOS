@@ -65,7 +65,7 @@ const salesDistribution = [
 const Dashboard = () => {
   // Chart data
   const [activeChart, setActiveChart] = useState('revenue');
-
+  const [user] = useState(JSON.parse(localStorage.getItem('user')));
   // Function to render bar chart
   const renderBarChart = () => {
     const maxValue = Math.max(...revenueData.map(d => activeChart === 'revenue' ? d.revenue : d.orders));
@@ -170,7 +170,7 @@ const Dashboard = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 ">Welcome back, Admin!</p>
+          <p className="text-gray-600 ">Welcome back, {user?.name || "admin"}!</p>
         </div>
         <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50">
           <ArrowPathIcon className="w-5 h-5 mr-2" />

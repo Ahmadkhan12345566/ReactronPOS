@@ -17,8 +17,8 @@ export async function startServer() {
   const app = express();
 
   app.use(cors({ origin: true, credentials: true }));
-  app.use(express.json());
-
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
   app.get('/health', (req, res) => res.send('OK'));
   app.use('/api/products', productsRoute);
   app.use('/api/auth', (await import('./routes/auth.js')).default);

@@ -56,7 +56,13 @@ const columns = [
     header: 'Qty',
     size: 60,
   },
-  imageColumn('createdBy', 'Created By', 'createdByAvatar', 140),
+  {
+    accessorKey: 'createdBy',
+    header: 'Created By',
+    size: 140,
+    cell: ({ getValue }) => getValue() || 'Unknown'
+  },
+  // imageColumn('createdBy', 'Created By', 'createdByAvatar', 140),
   actionsColumn(['view', 'edit', 'delete'])
 ];
 

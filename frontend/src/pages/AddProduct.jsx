@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
@@ -18,6 +17,10 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AddProduct = () => {
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
   const [accordion, setAccordion] = useState({
     productInfo: true,
     pricingStocks: false,
@@ -39,9 +42,16 @@ const AddProduct = () => {
   try {
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
-    console.log(formData);
+    
+    // Convert image to base64 if exists
+    if (selectedImages.length > 0) {
+      data.image = selectedImages[0]; // Use the first selected image
+    }
+    if (!user.id) throw new Error('User ID not found in localStorage');
+    data.createdBy = user.id;
+    console.log('Data to send:', data);
     await api.post('/api/products', data);
-    navigate('/products'); // Note: navigate instead of navigate.push
+    navigate('/products');
   } catch (error) {
     console.error('Error creating product:', error);
   }
@@ -52,12 +62,43 @@ const AddProduct = () => {
       [section]: !prev[section]
     }));
   };
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const newImages = files.map(file => URL.createObjectURL(file));
-    setSelectedImages(prev => [...prev, ...newImages]);
+  useEffect(() => {
+  const fetchOptions = async () => {
+    try {
+      const [catsResponse, brandsResponse, unitsResponse] = await Promise.all([
+        api.get('/api/categories'),
+        api.get('/api/brands'),
+        api.get('/api/units')
+      ]);
+      setCategories(catsResponse);
+      setBrands(brandsResponse);
+      setUnits(unitsResponse);
+    } catch (error) {
+      console.error('Error fetching options:', error);
+    }
   };
+  fetchOptions();
+}, []);
+  const toBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result); // Base64 string
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+const handleImageUpload = async (e) => {
+  const files = Array.from(e.target.files);
+
+  try {
+    const base64Images = await Promise.all(files.map(file => toBase64(file)));
+    setSelectedImages(prev => [...prev, ...base64Images]); // Base64 strings stored
+  } catch (err) {
+    console.error('Image conversion error:', err);
+  }
+};
+
 
   const removeImage = (index) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
@@ -180,11 +221,12 @@ const AddProduct = () => {
                     Add New
                   </button>
                 </div>
-                <select name="category" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                {/* Category Dropdown */}
+                <select name="categoryId" className="w-full px-3 py-2 border border-gray-600 rounded-lg">
                   <option value="">Select</option>
-                  <option value="Food">Food</option>
-                  <option value="Beverages">Beverages</option>
-                  <option value="Electronics">Electronics</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
                 </select>
               </div>
               
@@ -204,11 +246,11 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Brand <span className="text-red-500">*</span>
                 </label>
-                <select name="brand" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <select name="brandId" className="w-full px-3 py-2 border border-gray-600 rounded-lg">
                   <option value="">Select</option>
-                  <option value="CafeCo">CafeCo</option>
-                  <option value="PremiumBrand">PremiumBrand</option>
-                  <option value="EcoGoods">EcoGoods</option>
+                  {brands.map(brand => (
+                    <option key={brand.id} value={brand.id}>{brand.name}</option>
+                  ))}
                 </select>
               </div>
               
@@ -216,11 +258,11 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Unit <span className="text-red-500">*</span>
                 </label>
-                <select name="unit" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <select name="unitId" className="w-full px-3 py-2 border border-gray-600 rounded-lg">
                   <option value="">Select</option>
-                  <option value="Pc">Pc</option>
-                  <option value="Kg">Kg</option>
-                  <option value="L">L</option>
+                  {units.map(unit => (
+                    <option key={unit.id} value={unit.id}>{unit.name}</option>
+                  ))}
                 </select>
               </div>
               

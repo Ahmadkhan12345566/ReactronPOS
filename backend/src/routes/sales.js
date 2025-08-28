@@ -1,13 +1,12 @@
 // Update sales route to work with associations
 import express from 'express';
-import { models } from '../models/index.js';
+import { models , sequelize} from '../models/index.js';
 import { ConcurrencyControlService } from '../services/concurrencycontrol.js';
-
 const router = express.Router();
 
 // Create a new sale
 router.post('/', async (req, res) => {
-  const transaction = await models.sequelize.transaction();
+  const transaction = await sequelize.transaction();
   
   try {
     const { customerId, userId, items, subtotal, discount, tax, total, paymentMethod, amountTendered, change } = req.body;

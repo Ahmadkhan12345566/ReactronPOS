@@ -7,11 +7,11 @@ export default function CategoryModel(sequelize, DataTypes) {
       autoIncrement: true
     },
     name: DataTypes.STRING,
-    slug: DataTypes.STRING,
     status: {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active'
-    }
+    },
+        image: DataTypes.TEXT('long'),
   }, {
     tableName: 'categories',
     timestamps: true

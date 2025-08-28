@@ -10,6 +10,7 @@ import AddPurchase from './pages/AddPurchase';
 import Navbar from './components/NavBar';
 import POS from './pages/POS';
 import Categories from './pages/Categories';
+import AddCategory from './pages/AddCategory';
 import Brands from './pages/Brands';
 import Units from './pages/Units';
 import Invoices from './pages/Invoices';
@@ -40,6 +41,7 @@ function App() {
             <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/categories" element={<Categories />} />
+            <Route path="/categories/add" element={<AddCategory />} />
             <Route path="/products" element={<Products />} />
             <Route path="/brands" element={<Brands />} />
             <Route path="/units" element={<Units />} />

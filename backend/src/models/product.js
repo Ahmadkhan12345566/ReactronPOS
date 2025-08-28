@@ -18,9 +18,7 @@ export default function ProductModel(sequelize, DataTypes) {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active'
     },
-    image: DataTypes.STRING,
-    createdBy: DataTypes.STRING,
-    createdByAvatar: DataTypes.STRING,
+    image: DataTypes.TEXT('long'),
     // New fields from AddProduct form
     store: DataTypes.STRING,
     warehouse: DataTypes.STRING,
@@ -49,6 +47,7 @@ export default function ProductModel(sequelize, DataTypes) {
   });
 
   Product.associate = function(models) {
+    Product.belongsTo(models.User, { foreignKey: 'createdBy' });
     Product.belongsTo(models.Category, { foreignKey: 'categoryId' });
     Product.belongsTo(models.Brand, { foreignKey: 'brandId' });
     Product.belongsTo(models.Unit, { foreignKey: 'unitId' });

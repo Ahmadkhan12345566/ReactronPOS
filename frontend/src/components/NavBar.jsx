@@ -10,6 +10,7 @@ import {
   UserIcon,
   ArrowRightOnRectangleIcon,
   UserPlusIcon,
+  ArrowLeftOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
 // Modular dropdown component
@@ -72,10 +73,10 @@ const NavDropdown = ({ title, icon: Icon, items }) => {
 
 // User dropdown component
 const UserDropdown = () => {
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || null));
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-  
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -104,7 +105,7 @@ const UserDropdown = () => {
         <ChevronDownIcon className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       
-      {isOpen && (
+      {isOpen && !user && (
         <div className="absolute right-0 z-10 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5">
           <div className="py-1">
             <button
@@ -120,6 +121,19 @@ const UserDropdown = () => {
             >
               <UserPlusIcon className="h-4 w-4 mr-2" />
               Sign Up
+            </button>
+          </div>
+        </div>
+      )}
+      {isOpen && user && (
+        <div className="absolute right-0 z-10 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5">
+          <div className="py-1">
+            <button
+              onClick={() => {localStorage.removeItem('user'); setUser(null); setIsOpen(false); navigate('/signin');}}
+              className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+              >
+              <ArrowLeftOnRectangleIcon className="h-4 w-4 mr-2" />
+              Sign Out 
             </button>
           </div>
         </div>
@@ -174,6 +188,7 @@ const navLinks = [
 ];
 
 const NavBar = () => {
+
   return (
     <nav className="bg-gray-900 text-white shadow-md">
       <div className="max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between">

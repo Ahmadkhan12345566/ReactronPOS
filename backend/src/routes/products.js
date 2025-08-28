@@ -12,7 +12,8 @@ router.get('/', async (req, res) => {
       include: [
         { model: models.Category, attributes: ['name'] },
         { model: models.Brand, attributes: ['name'] },
-        { model: models.Unit, attributes: ['name'] }
+        { model: models.Unit, attributes: ['name'] },
+        { model: models.User, attributes: ['name'] }
       ]
     });
     
@@ -27,7 +28,6 @@ router.get('/', async (req, res) => {
       qty: product.qty,
       image: product.image,
       createdBy: product.createdBy,
-      createdByAvatar: product.createdByAvatar
     }));
     
     res.json(transformedProducts);
@@ -36,31 +36,35 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create a new product
-router.post('/', upload.single('csvFile'), async (req, res) => {
+// POST /products
+router.post('/', async (req, res) => {
   try {
-    let products = [];
-    
-    if (req.file) {
-      // Handle CSV import
-      const results = [];
-      fs.createReadStream(req.file.path)
-        .pipe(csv())
-        .on('data', (data) => results.push(data))
-        .on('end', async () => {
-          products = await models.Product.bulkCreate(results);
-          fs.unlinkSync(req.file.path); // Delete temp file
-          res.status(201).json(products);
-        });
-    } else {
-      // Handle regular form submission
-      const product = await models.Product.create(req.body);
-      res.status(201).json(product);
+    const { name, price, qty, image, ...rest } = req.body;
+
+    // Optional: Validate base64 string
+    if (!image || !image.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Invalid or missing base64 image string' });
     }
+
+    // Create product with base64 image
+    const product = await models.Product.create({
+      name,
+      price,
+      qty,
+      image: image || null,
+      categoryId,
+      brandId,     
+      unitId,
+      ...rest
+    });
+
+    res.status(201).json(product);
   } catch (error) {
+    console.error('Product creation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // Update a product
 router.put('/:id', async (req, res) => {

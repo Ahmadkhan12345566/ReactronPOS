@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 
-const defaultOnSignIn = () => {
+const defaultOnSignIn = (response) => {
   console.log("User signed in");
+  localStorage.setItem('user', JSON.stringify(response.user || {}));
   document.location.replace('/'); // Redirect to home page after sign in
 }
 
@@ -14,8 +15,9 @@ export default function SignIn({ onSignIn = defaultOnSignIn }) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const user = await api.post('/api/auth/login', credentials);
-      onSignIn(user);
+      const response = await api.post('/api/auth/login', credentials);
+      console.log('Login successful:', response);
+      onSignIn(response);
     } catch (error) {
       console.error('Login failed:', error);
     } finally {
