@@ -12,7 +12,7 @@ export default function CustomerModel(sequelize, DataTypes) {
     address: DataTypes.STRING,
     city: DataTypes.STRING,
     country: DataTypes.STRING,
-    avatar: DataTypes.STRING,
+    image: DataTypes.TEXT('long'),
     status: {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active'

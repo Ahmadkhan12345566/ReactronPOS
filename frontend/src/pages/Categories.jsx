@@ -1,28 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CategoryList from '../components/lists/CategoryList';
-
-// Dummy categories data
-export const dummyCategories = [
-  { id: 1, name: 'Computers', slug: 'computers', createdOn: '24 Dec 2024', status: 'Active' },
-  { id: 2, name: 'Electronics', slug: 'electronics', createdOn: '10 Dec 2024', status: 'Active' },
-  { id: 3, name: 'Shoe', slug: 'shoe', createdOn: '27 Nov 2024', status: 'Active' },
-  { id: 4, name: 'Cosmetics', slug: 'cosmetics', createdOn: '18 Nov 2024', status: 'Active' },
-  { id: 5, name: 'Groceries', slug: 'groceries', createdOn: '06 Nov 2024', status: 'Active' },
-  { id: 6, name: 'Furniture', slug: 'furniture', createdOn: '25 Oct 2024', status: 'Active' },
-  { id: 7, name: 'Bags', slug: 'bags', createdOn: '14 Oct 2024', status: 'Active' },
-  { id: 8, name: 'Phone', slug: 'phone', createdOn: '03 Oct 2024', status: 'Active' },
-  { id: 9, name: 'Appliances', slug: 'appliances', createdOn: '20 Sep 2024', status: 'Active' },
-  { id: 10, name: 'Clothing', slug: 'clothing', createdOn: '10 Sep 2024', status: 'Active' },
-];
+import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 
 export default function Categories() {
-  const [categories] = useState(dummyCategories);
-  const [showForm, setShowForm] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get('/api/categories');
+      
+      // Format dates for display
+      const formattedData = data.map(category => ({
+        ...category,
+        created_at: new Date(category.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })
+      }));
+      
+      setCategories(formattedData);
+      if (data.length === 0) {
+        setError('No categories found');  
+      } else {
+        setError(null);
+      }
+    } catch (err) {
+      setError('Failed to fetch categories');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="p-6">Loading categories...</div>;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
-      <CategoryList categories={categories} setShowForm={setShowForm} />
-      {/* We'll add the AddCategory modal here later */}
+      <CategoryList 
+        categories={categories || []} 
+        setShowForm={() => navigate('/categories/add')} 
+      />
     </div>
   );
 }

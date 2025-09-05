@@ -12,7 +12,7 @@ import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function BrandList({ brands, setShowForm }) {
+export default function BrandList({ brands = [], setShowForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
@@ -26,7 +26,13 @@ export default function BrandList({ brands, setShowForm }) {
     indexColumn(),
     imageColumn('name', 'Brand', 'image'),
     {
-      accessorKey: 'createdOn',
+      id: 'created_by',
+      accessorFn: row => row.createdBy ?? row.created_by ?? 'Unknown',
+      header: 'Created By',
+      size: 140,
+    },
+    {
+      accessorKey: 'createdAt',
       header: 'Created Date',
       size: 120,
     },
@@ -56,13 +62,11 @@ export default function BrandList({ brands, setShowForm }) {
     setRowSelection,
     onAddItem: () => setShowForm(true),
     resetFilters: () => {
-          setSearch('');
-          setStatusFilter('All');
-          setRowSelection({});
-        }
+      setSearch('');
+      setStatusFilter('All');
+      setRowSelection({});
+    }
   });
-
-  
 
   return (
     <ListContainer>
@@ -76,7 +80,7 @@ export default function BrandList({ brands, setShowForm }) {
       />
       
       <ListFilter>
-        <SearchInput search={search} setSearch={setSearch} />
+        <SearchInput search={search} setSearch={setSearch} placeholder="Search brands..." />
         <SelectFilters 
           statusFilter={statusFilter} 
           setStatusFilter={setStatusFilter} 
@@ -97,29 +101,3 @@ export default function BrandList({ brands, setShowForm }) {
     </ListContainer>
   );
 }
-//  return (
-//   <ListContainer>
-//     <ListHeader 
-//       title="Billers"
-//       description="Manage your billers"
-//       controlButtons={<ListControlButtons buttons={} />}
-//       primaryButtons={primaryButtons.map((btn, i) => (
-//                 <React.Fragment key={i}>{btn.element}</React.Fragment>
-//               ))}
-//       />
-//       <ListFilter>
-//               <SearchInput setSearch={setSearch} />
-//               <SelectFilters statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusOptions={statusOptions} />
-//       </ListFilter>
-//     <ListTable 
-//       table={table} 
-//       emptyState={emptyState}
-//       maxHeight={"max-h-[calc(100vh-26rem)]"}
-//     />
-    
-//     <ListPagination 
-//       table={table} 
-//       dataLength={filteredData.length} 
-//     />
-//   </ListContainer>
-// );

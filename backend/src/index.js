@@ -8,6 +8,15 @@ import { sequelize } from './models/index.js';
 import productsRoute from "./routes/products.js";
 import customersRoute from './routes/customers.js';
 import salesRoute from './routes/sales.js';
+import categoriesRoute from './routes/categories.js';
+import brandsRoute from './routes/brands.js';
+import suppliersRoute from './routes/suppliers.js';
+import billersRoute from './routes/billers.js';
+import warehouseRoutes from './routes/warehouses.js';
+import subCategoryRoutes from './routes/subCategories.js';
+import productVariantRoutes from './routes/productVariants.js';
+import inventoryRoutes from './routes/inventory.js';
+
 import { seedDatabase } from './initialData.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +33,17 @@ export async function startServer() {
   app.use('/api/auth', (await import('./routes/auth.js')).default);
   app.use('/api/sales', salesRoute);
   app.use('/api/customers', customersRoute);
+  app.use('/api/categories', categoriesRoute);
+  app.use('/api/brands', brandsRoute);
+  app.use('/api/units', (await import('./routes/units.js')).default);
+  app.use('/api/customers', customersRoute);
+  app.use('/api/suppliers', suppliersRoute);
+  app.use('/api/purchases', (await import('./routes/purchases.js')).default);
+  app.use('/api/billers', billersRoute);
+  app.use('/api/warehouses', warehouseRoutes);
+  app.use('/api/sub-categories', subCategoryRoutes);
+  app.use('/api/product-variants', productVariantRoutes);
+  app.use('/api/inventory', inventoryRoutes);
 
   app.use((err, req, res, next) => {
     console.error('Server error:', err);

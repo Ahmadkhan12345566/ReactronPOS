@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useUI } from "../ListComponents/useUI";
-import { selectColumn, imageColumn, statusColumn, actionsColumn } from '../ListComponents/columnHelpers';
+import { selectColumn, statusColumn, actionsColumn } from '../ListComponents/columnHelpers';
 
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
@@ -20,46 +20,36 @@ export default function BillerList({ Billers, setShowForm }) {
   // Status options
   const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
 
-  // Columns configuration using helpers
+  // Updated columns to match User model - CALL the helper functions
   const columns = [
-    imageColumn('name', 'Biller', 'avatar'),
+    selectColumn(), // ← Add parentheses to call the function
     {
+      id: 'name', // ← Add id property
+      accessorKey: 'name',
+      header: 'Name',
+      size: 150,
+    },
+    {
+      id: 'email', // ← Add id property
       accessorKey: 'email',
       header: 'Email',
       size: 200,
     },
     {
-      accessorKey: 'phone',
-      header: 'Phone',
+      id: 'role', // ← Add id property
+      accessorKey: 'role',
+      header: 'Role',
       size: 120,
     },
-    {
-      accessorKey: 'company',
-      header: 'Company',
-      size: 120,
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ getValue }) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          getValue() === 'Active' 
-            ? 'text-success bg-success-transparent' 
-            : 'text-danger bg-danger-transparent'
-        }`}>
-          {getValue()}
-        </span>
-      ),
-      size: 100,
-    },
-    actionsColumn(['view', 'edit', 'delete'])
+    statusColumn('status', 'Status'), // ← Call with parameters
+    actionsColumn(['view', 'edit', 'delete']) // ← Call with parameters
   ];
 
-  // Filtered data
+  // Filtered data - updated to match User model fields
   const filteredData = useMemo(() => {
-    return Billers.filter(Biller => 
-      (statusFilter === 'All' || Biller.status === statusFilter) &&
-      `${Biller.name} ${Biller.email} ${Biller.phone} ${Biller.company}`
+    return Billers.filter(biller => 
+      (statusFilter === 'All' || biller.status === statusFilter) &&
+      `${biller.name || ''} ${biller.email || ''} ${biller.role || ''}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
@@ -79,12 +69,11 @@ export default function BillerList({ Billers, setShowForm }) {
     setRowSelection,
     onAddItem: () => setShowForm(true),
     resetFilters: () => {
-          setSearch('');
-          setStatusFilter('All');
-          setRowSelection({});
-        }
+      setSearch('');
+      setStatusFilter('All');
+      setRowSelection({});
+    }
   });
-
 
   return (
     <ListContainer>
@@ -98,7 +87,7 @@ export default function BillerList({ Billers, setShowForm }) {
       />
       
       <ListFilter>
-        <SearchInput search={search} setSearch={setSearch} />
+        <SearchInput search={search} setSearch={setSearch} placeholder="Search billers..." />
         <SelectFilters 
           statusFilter={statusFilter} 
           setStatusFilter={setStatusFilter} 

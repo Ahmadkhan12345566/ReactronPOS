@@ -7,10 +7,18 @@ export default function BrandModel(sequelize, DataTypes) {
       autoIncrement: true
     },
     name: DataTypes.STRING,
-    image: DataTypes.STRING,
     status: {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active'
+    },
+    image: DataTypes.TEXT('long'),
+    createdBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id'
+      }
     }
   }, {
     tableName: 'brands',
@@ -19,6 +27,10 @@ export default function BrandModel(sequelize, DataTypes) {
 
   Brand.associate = function(models) {
     Brand.hasMany(models.Product, { foreignKey: 'brandId' });
+    Brand.belongsTo(models.User, { 
+      foreignKey: 'createdBy',
+      as: 'User'
+    });
   };
 
   return Brand;

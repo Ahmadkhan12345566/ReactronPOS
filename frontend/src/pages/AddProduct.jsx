@@ -3,6 +3,8 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
+import WarehouseModal from '../components/forms/WarehouseModal';
+import SubcategoryModal from '../components/forms/SubcategoryModal';
 import { api } from '../services/api';
 import {
   ArrowLeftIcon,
@@ -17,10 +19,14 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AddProduct = () => {
+  const [showWarehouseModal, setShowWarehouseModal] = useState(false);
+  const [showSubcategoryModal, setShowSubcategoryModal] = useState(false); 
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [units, setUnits] = useState([]);
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+  const [warehouses, setWarehouses] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
   const [accordion, setAccordion] = useState({
     productInfo: true,
     pricingStocks: false,
@@ -31,74 +37,133 @@ const AddProduct = () => {
   const navigate = useNavigate();  
   const [productType, setProductType] = useState('single');
   const [selectedImages, setSelectedImages] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [customFields, setCustomFields] = useState({
     warranties: false,
     manufacturer: false,
     expiry: false
   });
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [catsResponse, brandsResponse, unitsResponse, warehousesResponse, subCatsResponse, suppliersResponse] = await Promise.all([
+          api.get('/api/categories'),
+          api.get('/api/brands'),
+          api.get('/api/units'),
+          api.get('/api/warehouses'),
+          api.get('/api/sub-categories'),
+          api.get('/api/suppliers')
+        ]);
+        setCategories(catsResponse);
+        setBrands(brandsResponse);
+        setUnits(unitsResponse);
+        setWarehouses(warehousesResponse);
+        setSubCategories(subCatsResponse);
+        setSuppliers(suppliersResponse);
+      } catch (error) {
+        console.error('Error fetching options:', error);
+      }
+    };
+    fetchOptions();
+  }, []);
+  const generateSKU = () => {
+    const randomNumber = Math.floor(Math.random() * 1000000); // Generates random number between 0-999999
+    return `SK${randomNumber}`;
+  };
+    const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    // Convert image to base64 if exists
-    if (selectedImages.length > 0) {
-      data.image = selectedImages[0]; // Use the first selected image
+    try {
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Convert image to base64 if exists
+      if (selectedImages.length > 0) {
+        data.image = selectedImages[0];
+      }
+      
+      if (!user.id) throw new Error('User ID not found in localStorage');
+      data.createdBy = user.id;
+      
+      // Create product with variants
+      const productData = {
+        name: data.name,
+        description: data.description,
+        categoryId: data.categoryId,
+        subCategoryId: data.subCategoryId,
+        brandId: data.brandId,
+        unitId: data.unitId,
+        productType: data.productType,
+        taxType: data.taxType,
+        tax: data.tax,
+        createdBy: data.createdBy,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        warranties: data.warranties,
+        barcodeSymbology: data.barcodeSymbology,
+        sellingType: data.sellingType,
+        image: data.image
+      };
+      
+      // Create product
+      const product = await api.post('/api/products', productData);
+      
+      // Create default variant
+      const variantData = {
+        productId: product.id,
+        sku: data.sku,
+        itemBarcode: data.itemBarcode,
+        price: data.price,
+        attributes: data.attributes || {},
+        expiryDate: data.expiryDate,
+        manufacturedDate: data.manufacturedDate
+      };
+      
+      const variant = await api.post('/api/product-variants', variantData);
+      
+      // Create inventory entry
+      const inventoryData = {
+        variantId: variant.id,
+        warehouseId: data.warehouseId,
+        qty: data.quantity,
+        quantityAlert: data.quantityAlert
+      };
+      
+      await api.post('/api/inventory', inventoryData);
+      
+      navigate('/products');
+    } catch (error) {
+      console.error('Error creating product:', error);
     }
-    if (!user.id) throw new Error('User ID not found in localStorage');
-    data.createdBy = user.id;
-    console.log('Data to send:', data);
-    await api.post('/api/products', data);
-    navigate('/products');
-  } catch (error) {
-    console.error('Error creating product:', error);
-  }
-};
+  };
+
   const toggleAccordion = (section) => {
     setAccordion(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
-  useEffect(() => {
-  const fetchOptions = async () => {
+
+  const toBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+
     try {
-      const [catsResponse, brandsResponse, unitsResponse] = await Promise.all([
-        api.get('/api/categories'),
-        api.get('/api/brands'),
-        api.get('/api/units')
-      ]);
-      setCategories(catsResponse);
-      setBrands(brandsResponse);
-      setUnits(unitsResponse);
-    } catch (error) {
-      console.error('Error fetching options:', error);
+      const base64Images = await Promise.all(files.map(file => toBase64(file)));
+      setSelectedImages(prev => [...prev, ...base64Images]);
+    } catch (err) {
+      console.error('Image conversion error:', err);
     }
   };
-  fetchOptions();
-}, []);
-  const toBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result); // Base64 string
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
-const handleImageUpload = async (e) => {
-  const files = Array.from(e.target.files);
-
-  try {
-    const base64Images = await Promise.all(files.map(file => toBase64(file)));
-    setSelectedImages(prev => [...prev, ...base64Images]); // Base64 strings stored
-  } catch (err) {
-    console.error('Image conversion error:', err);
-  }
-};
-
 
   const removeImage = (index) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
@@ -136,26 +201,43 @@ const handleImageUpload = async (e) => {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Store <span className="text-red-500">*</span>
-                </label>
-                <select name="store" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                  <option>Select</option>
-                  <option>Electro Mart</option>
-                  <option>Quantum Gadgets</option>
-                  <option>Gadget World</option>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Warehouse <span className="text-red-500">*</span>
+                  </label>
+                  <button 
+                  type="button" 
+                  onClick={() => setShowWarehouseModal(true)}
+                  className="flex items-center text-black text-sm"
+                >
+                  <PlusCircleIcon className="w-4 h-4 mr-1" />
+                  Add New
+                </button>
+              </div>
+                <select 
+                  name="warehouseId" 
+                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Select</option>
+                  {warehouses.map(warehouse => (
+                    <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
+                  ))}
                 </select>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Warehouse <span className="text-red-500">*</span>
+                  Supplier
                 </label>
-                <select name="warehouse" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                  <option>Select</option>
-                  <option>Lavish Warehouse</option>
-                  <option>Quaint Warehouse</option>
-                  <option>Traditional Warehouse</option>
+                <select 
+                  name="supplierId" 
+                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select Supplier</option>
+                  {suppliers.map(supplier => (
+                    <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                  ))}
                 </select>
               </div>
               
@@ -168,12 +250,13 @@ const handleImageUpload = async (e) => {
                   type="text" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter product name"
+                  required
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Slug <span className="text-red-500">*</span>
+                  Slug
                 </label>
                 <input 
                   name="slug"
@@ -193,8 +276,13 @@ const handleImageUpload = async (e) => {
                     type="text" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-l-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter SKU"
+                    required
                   />
-                  <button type="button" className="px-4 py-2 bg-black text-white rounded-r-lg hover:bg-blue-700">
+                  <button type="button" className="px-4 py-2 bg-black text-white rounded-r-lg hover:bg-blue-700"
+                  onClick={(e) => {
+                    const skuInput = e.target.closest('div').querySelector('input[name="sku"]');
+                    skuInput.value = generateSKU();
+                  }}>
                     Generate
                   </button>
                 </div>
@@ -204,7 +292,7 @@ const handleImageUpload = async (e) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Selling Type <span className="text-red-500">*</span>
                 </label>
-                <select name="sellingType" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <select name="sellingType" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
                   <option value="">Select</option>
                   <option value="Online">Online</option>
                   <option value="POS">POS</option>
@@ -216,13 +304,12 @@ const handleImageUpload = async (e) => {
                   <label className="block text-sm font-medium text-gray-700">
                     Category <span className="text-red-500">*</span>
                   </label>
-                  <button type="button" className="flex items-center text-black text-sm">
+                  <button type="button" onClick={()=>window.location.replace("/#/categories/add")} className="flex items-center text-black text-sm">
                     <PlusCircleIcon className="w-4 h-4 mr-1" />
                     Add New
                   </button>
                 </div>
-                {/* Category Dropdown */}
-                <select name="categoryId" className="w-full px-3 py-2 border border-gray-600 rounded-lg">
+                <select name="categoryId" className="w-full px-3 py-2 border border-gray-600 rounded-lg" required>
                   <option value="">Select</option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -231,14 +318,28 @@ const handleImageUpload = async (e) => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sub Category <span className="text-red-500">*</span>
-                </label>
-                <select name="subCategory" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sub Category <span className="text-red-500">*</span>
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowSubcategoryModal(true)}
+                    className="flex items-center text-black text-sm"
+                  >
+                    <PlusCircleIcon className="w-4 h-4 mr-1" />
+                    Add New
+                  </button>
+                </div>
+                <select 
+                  name="subCategoryId" 
+                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
                   <option value="">Select</option>
-                  <option value="Main Course">Main Course</option>
-                  <option value="Desserts">Desserts</option>
-                  <option value="Snacks">Snacks</option>
+                  {subCategories.map(subCat => (
+                    <option key={subCat.id} value={subCat.id}>{subCat.name}</option>
+                  ))}
                 </select>
               </div>
               
@@ -246,7 +347,7 @@ const handleImageUpload = async (e) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Brand <span className="text-red-500">*</span>
                 </label>
-                <select name="brandId" className="w-full px-3 py-2 border border-gray-600 rounded-lg">
+                <select name="brandId" className="w-full px-3 py-2 border border-gray-600 rounded-lg" required>
                   <option value="">Select</option>
                   {brands.map(brand => (
                     <option key={brand.id} value={brand.id}>{brand.name}</option>
@@ -258,7 +359,7 @@ const handleImageUpload = async (e) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Unit <span className="text-red-500">*</span>
                 </label>
-                <select name="unitId" className="w-full px-3 py-2 border border-gray-600 rounded-lg">
+                <select name="unitId" className="w-full px-3 py-2 border border-gray-600 rounded-lg" required>
                   <option value="">Select</option>
                   {units.map(unit => (
                     <option key={unit.id} value={unit.id}>{unit.name}</option>
@@ -268,7 +369,7 @@ const handleImageUpload = async (e) => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Barcode Symbology <span className="text-red-500">*</span>
+                  Barcode Symbology
                 </label>
                 <select name="barcodeSymbology" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                   <option value="">Select</option>
@@ -280,7 +381,7 @@ const handleImageUpload = async (e) => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Item Barcode <span className="text-red-500">*</span>
+                  Item Barcode
                 </label>
                 <div className="flex">
                   <input 
@@ -352,10 +453,11 @@ const handleImageUpload = async (e) => {
                     Quantity <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    name="qty"
+                    name="quantity"
                     type="number" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter quantity"
+                    required
                   />
                 </div>
                 
@@ -368,12 +470,13 @@ const handleImageUpload = async (e) => {
                     type="number" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter price"
+                    required
                   />
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tax Type <span className="text-red-500">*</span>
+                    Tax Type
                   </label>
                   <select name="taxType" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Select</option>
@@ -384,7 +487,7 @@ const handleImageUpload = async (e) => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tax <span className="text-red-500">*</span>
+                    Tax
                   </label>
                   <select name="tax" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Select</option>
@@ -396,7 +499,7 @@ const handleImageUpload = async (e) => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount Type <span className="text-red-500">*</span>
+                    Discount Type
                   </label>
                   <select name="discountType" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Select</option>
@@ -407,7 +510,7 @@ const handleImageUpload = async (e) => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount Value <span className="text-red-500">*</span>
+                    Discount Value
                   </label>
                   <input 
                     name="discountValue"
@@ -419,7 +522,7 @@ const handleImageUpload = async (e) => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity Alert <span className="text-red-500">*</span>
+                    Quantity Alert
                   </label>
                   <input 
                     name="quantityAlert"
@@ -433,7 +536,7 @@ const handleImageUpload = async (e) => {
               <div>
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Variant Attribute <span className="text-red-500">*</span>
+                    Variant Attribute
                   </label>
                   <div className="flex items-center">
                     <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
@@ -659,13 +762,13 @@ const handleImageUpload = async (e) => {
               {customFields.warranties && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Warranty <span className="text-red-500">*</span>
+                    Warranty
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    <option>Select</option>
-                    <option>1 Year Warranty</option>
-                    <option>2 Year Warranty</option>
-                    <option>Lifetime Warranty</option>
+                  <select name="warranty" className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select</option>
+                    <option value="1 Year Warranty">1 Year Warranty</option>
+                    <option value="2 Year Warranty">2 Year Warranty</option>
+                    <option value="Lifetime Warranty">Lifetime Warranty</option>
                   </select>
                 </div>
               )}
@@ -673,7 +776,7 @@ const handleImageUpload = async (e) => {
               {customFields.manufacturer && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Manufacturer <span className="text-red-500">*</span>
+                    Manufacturer
                   </label>
                   <input name="manufacturerName"
                     type="text" 
@@ -686,7 +789,7 @@ const handleImageUpload = async (e) => {
               {customFields.manufacturer && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Manufactured Date <span className="text-red-500">*</span>
+                    Manufactured Date
                   </label>
                   <input name="manufacturedDate"
                     type="date" 
@@ -698,7 +801,7 @@ const handleImageUpload = async (e) => {
               {customFields.expiry && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expiry Date <span className="text-red-500">*</span>
+                    Expiry Date
                   </label>
                   <input name="expiryDate"
                     type="date" 
@@ -715,6 +818,17 @@ const handleImageUpload = async (e) => {
           submitLabel="Add Product" 
         />
       </form>
+      <WarehouseModal 
+        showModal={showWarehouseModal}
+        setShowModal={setShowWarehouseModal}
+        onWarehouseCreated={()=> window.location.replace("/#/products/add")}
+      />
+
+      <SubcategoryModal 
+        showModal={showSubcategoryModal}
+        setShowModal={setShowSubcategoryModal}
+        onSubcategoryCreated={()=> window.location.replace("/#/products/add")}
+      />
     </div>
   );
 };

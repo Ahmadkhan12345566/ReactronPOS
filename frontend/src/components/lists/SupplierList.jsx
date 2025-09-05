@@ -15,9 +15,9 @@ import ListFilter from '../ListComponents/ListFilter';
 import ListTable from '../ListComponents/ListTable';
 import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
-import SelectField from '../ListComponents/SelectField';
+import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function SupplierList({ Suppliers, setShowForm }) {
+export default function SupplierList({ suppliers = [], setShowForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
@@ -25,11 +25,27 @@ export default function SupplierList({ Suppliers, setShowForm }) {
   // Status options
   const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
 
-
   // Columns using helpers
   const columns = [
     selectColumn(),
-    imageColumn('name', 'Supplier', 'avatar'),
+    // Image (handles missing or empty urls)
+    {
+      id: 'image',
+      accessorFn: row => row.image || row.icon || '',
+      header: 'Image',
+      size: 90,
+      cell: ({ getValue }) => {
+        const src = getValue();
+        return src ? (
+          <img src={src} alt="supplier" className="w-10 h-10 object-cover rounded-md" />
+        ) : <span className="text-xs text-gray-400">—</span>;
+      }
+    },
+    {
+      accessorKey: 'name',
+      header: 'Name',
+      size: 150,
+    },
     {
       accessorKey: 'email',
       header: 'Email',
@@ -43,26 +59,21 @@ export default function SupplierList({ Suppliers, setShowForm }) {
     {
       accessorKey: 'address',
       header: 'Address',
-      size: 120,
-    },
-    {
-      accessorKey: 'products',
-      header: 'Products',
-      size: 120,
+      size: 200,
     },
     statusColumn('status', 'Status'),
-  actionsColumn(['view', 'edit', 'delete'])
+    actionsColumn(['view', 'edit', 'delete'])
   ];
 
   // Filtered data
   const filteredData = useMemo(() => {
-    return Suppliers.filter(Supplier => 
-      (statusFilter === 'All' || Supplier.status === statusFilter) &&
-      `${Supplier.name} ${Supplier.email} ${Supplier.phone} ${Supplier.address} ${Supplier.products}`
+    return suppliers.filter(supplier => 
+      (statusFilter === 'All' || supplier.status === statusFilter) &&
+      `${supplier.name || ''} ${supplier.email || ''} ${supplier.phone || ''} ${supplier.address || ''}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
-  }, [Suppliers, search, statusFilter]);
+  }, [suppliers, search, statusFilter]);
 
   // Use UI hook
   const {
@@ -84,8 +95,6 @@ export default function SupplierList({ Suppliers, setShowForm }) {
     }
   });
 
- 
-
   return (
     <ListContainer>
       <ListHeader 
@@ -98,24 +107,12 @@ export default function SupplierList({ Suppliers, setShowForm }) {
       />
       
       <ListFilter>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-9">
-            <SearchInput 
-              search={search} 
-              setSearch={setSearch} 
-              placeholder="Search suppliers..." 
-            />
-          </div>
-          <div className="md:col-span-3">
-            <SelectField
-              name="status"
-              label="Status"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={statusOptions}
-            />
-          </div>
-        </div>
+        <SearchInput search={search} setSearch={setSearch} placeholder="Search suppliers..." />
+        <SelectFilters 
+          statusFilter={statusFilter} 
+          setStatusFilter={setStatusFilter} 
+          statusOptions={statusOptions} 
+        />
       </ListFilter>
       
       <ListTable 

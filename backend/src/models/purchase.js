@@ -7,7 +7,6 @@ export default function PurchaseModel(sequelize, DataTypes) {
       autoIncrement: true
     },
     reference: DataTypes.STRING,
-    supplier: DataTypes.STRING,
     date: DataTypes.DATE,
     status: DataTypes.STRING,
     payment_status: DataTypes.ENUM('Paid', 'Unpaid', 'Overdue'),

@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useUI } from "../ListComponents/useUI";
+import { useEffect } from 'react';
 import { 
   selectColumn, 
   indexColumn, 
-  statusColumn 
+  statusColumn,
+  actionsColumn
 } from '../ListComponents/columnHelpers';
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
@@ -15,13 +16,15 @@ import ListFilter from '../ListComponents/ListFilter';
 import ListTable from '../ListComponents/ListTable';
 import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
-import SelectField from '../ListComponents/SelectField';
+import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function UnitList({ units, setShowForm }) {
+export default function UnitList({ units = [], setShowForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
 
+
+ 
   // Status options
   const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
 
@@ -35,47 +38,39 @@ export default function UnitList({ units, setShowForm }) {
       size: 150,
     },
     {
-      accessorKey: 'shortName',
+      accessorKey: 'short_name',
       header: 'Short Name',
       size: 120,
     },
     {
-      accessorKey: 'productCount',
-      header: 'No of Products',
-      size: 120,
+      id: 'created_by',
+      accessorFn: row => row.createdBy ?? row.created_by ?? 'Unknown',
+      header: 'Created By',
+      size: 140,
     },
     {
-      accessorKey: 'createdOn',
+      accessorKey: 'createdAt',
       header: 'Created Date',
       size: 120,
     },
     statusColumn('status', 'Status'),
-  {
-    id: 'actions',
-    header: 'Actions',
-    cell: () => (
-      <div className="flex space-x-1">
-        <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
-          <PencilIcon className="w-5 h-5" />
-        </button>
-        <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg">
-          <TrashIcon className="w-5 h-5" />
-        </button>
-      </div>
-    ),
-    size: 100,
-  }
-];
+    actionsColumn(['edit', 'delete'])
+  ];
 
   // Filtered data
   const filteredData = useMemo(() => {
     return units.filter(unit => 
       (statusFilter === 'All' || unit.status === statusFilter) &&
-      `${unit.name} ${unit.shortName}`
+      `${unit.name} ${unit.short_name}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
   }, [units, search, statusFilter]);
+   useEffect(() => {
+  filteredData.forEach(unit => {
+    console.log(unit);
+  });
+}, [filteredData]);
 
   // Use UI hook
   const {
@@ -109,24 +104,12 @@ export default function UnitList({ units, setShowForm }) {
       />
       
       <ListFilter>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-9">
-            <SearchInput 
-              search={search} 
-              setSearch={setSearch} 
-              placeholder="Search units..." 
-            />
-          </div>
-          <div className="md:col-span-3">
-            <SelectField
-              name="status"
-              label="Status"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={statusOptions}
-            />
-          </div>
-        </div>
+        <SearchInput search={search} setSearch={setSearch} placeholder="Search units..." />
+        <SelectFilters 
+          statusFilter={statusFilter} 
+          setStatusFilter={setStatusFilter} 
+          statusOptions={statusOptions} 
+        />
       </ListFilter>
       
       <ListTable 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+
 // Define status configurations
 const statusMap = {
   Received: { className: 'bg-green-100 text-green-800' },
@@ -14,6 +15,7 @@ const paymentStatusConfig = {
   Overdue: { className: 'bg-yellow-100 text-yellow-800' },
   default: { className: 'bg-gray-100 text-gray-800' }
 }
+
 // Reusable Select Column
 export const selectColumn = (size = 40) => ({
   id: 'select',
@@ -105,21 +107,40 @@ export const actionsColumn = (actions = ['view', 'edit', 'delete'], size = 120) 
   size
 });
 
-// Reusable Image Column
-export const imageColumn = (accessor, header, imageAccessor, size = 200) => ({
-  accessorKey: accessor,
+// Reusable Image Column - shows image + name (if nameAccessor is provided)
+export const imageColumn = (nameAccessor, header, imageAccessor, size = 'md') => ({
+  accessorKey: imageAccessor,
   header,
-  cell: ({ row }) => (
-    <div className="flex items-center">
-      <div className="bg-gray-100 rounded-full p-1 mr-3">
-        <img 
-          src={row.original[imageAccessor]} 
-          alt={row.original[accessor]} 
-          className="w-8 h-8 rounded-full object-cover"
-        />
+  cell: ({ row }) => {
+    const imageData = row.getValue(imageAccessor);
+    const name = row.original[nameAccessor] || 'Unknown';
+    
+    return (
+      <div className="flex items-center">
+        {imageData ? (
+          <img 
+            src={imageData} 
+            alt={name}
+            className="w-10 h-10 rounded-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              // Show fallback when image fails to load
+              const fallback = e.target.nextSibling;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        {/* Fallback displayed if no image or image fails to load */}
+        <div 
+          className={`w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center ${imageData ? 'hidden' : 'flex'}`}
+        >
+          <span className="text-sm font-medium text-gray-600">
+            {name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+        {nameAccessor && <span className="ml-3">{name}</span>}
       </div>
-      <span>{row.original[accessor]}</span>
-    </div>
-  ),
-  size
+    );
+  },
+  size: nameAccessor ? 200 : 70
 });

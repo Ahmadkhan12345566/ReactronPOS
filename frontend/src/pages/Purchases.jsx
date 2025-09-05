@@ -1,63 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PurchaseList from "../components/lists/PurchaseList";
 import { useNavigate } from "react-router-dom";
-
-// Updated dummy data to match new template requirements
-const dummyPurchases = [
-  { 
-    id: 1, 
-    reference: 'PT001',
-    date: "2024-07-29", 
-    supplier: "ABC Supplies", 
-    status: "Received",
-    total: 5000,
-    paid: 5000,
-    due: 0,
-    paymentStatus: "Paid"
-  },
-  { 
-    id: 2, 
-    reference: 'PT002',
-    date: "2024-07-28", 
-    supplier: "XYZ Traders", 
-    status: "Pending",
-    total: 3400,
-    paid: 0,
-    due: 3400,
-    paymentStatus: "Unpaid"
-  },
-  { 
-    id: 3, 
-    reference: 'PT003',
-    date: "2024-07-27", 
-    supplier: "Global Mart", 
-    status: "Received",
-    total: 2120,
-    paid: 2120,
-    due: 0,
-    paymentStatus: "Paid"
-  },
-  { 
-    id: 4, 
-    reference: 'PT004',
-    date: "2024-07-26", 
-    supplier: "Tech Suppliers", 
-    status: "Ordered",
-    total: 15000,
-    paid: 5000,
-    due: 10000,
-    paymentStatus: "Overdue"
-  },
-];
+import { api } from "../services/api";
 
 const Purchases = () => {
+  const [purchases, setPurchases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchPurchases();
+  }, []);
+
+  const fetchPurchases = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get('/api/purchases');
+      
+      // Format the data to match the frontend expectations
+      const formattedData = data.map(purchase => ({
+        ...purchase,
+        paymentStatus: purchase.payment_status, // Map payment_status to paymentStatus
+        supplier: purchase.Supplier ? purchase.Supplier.name : 'Unknown Supplier'
+      }));
+      
+      setPurchases(formattedData);
+      if (data.length === 0) {
+        setError('No purchases found');  
+      } else {
+        setError(null);
+      }
+    } catch (err) {
+      setError('Failed to fetch purchases');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="p-6">Loading purchases...</div>;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
 
   return (
     <div className="p-6 h-full flex flex-col">
       <div className="flex-1 min-h-0">
         <PurchaseList 
-          purchases={dummyPurchases} 
+          purchases={purchases || []} 
           onAddPurchase={() => navigate("/purchases/add")}
         />
       </div>

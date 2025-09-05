@@ -3,35 +3,33 @@ import { models } from '../models/index.js';
 
 const router = express.Router();
 
-// Get all customers
+// Get all suppliers
 router.get('/', async (req, res) => {
   try {
-    const customers = await models.Customer.findAll({
+    const suppliers = await models.Supplier.findAll({
       where: { status: 'Active' }
     });
-    res.json(customers);
+    res.json(suppliers);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Create a new customer
+// Create a new supplier
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, address, city, country, image, status } = req.body;
+    const { name, email, phone, address, image, status } = req.body;
     
-    const customer = await models.Customer.create({
+    const supplier = await models.Supplier.create({
       name,
       email,
       phone,
       address,
-      city,
-      country,
       image,
       status: status || 'Active'
     });
     
-    res.status(201).json(customer);
+    res.status(201).json(supplier);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

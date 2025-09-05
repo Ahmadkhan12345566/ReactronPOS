@@ -7,9 +7,6 @@ export default function UserModel(sequelize, DataTypes) {
     },
     name: DataTypes.STRING,
     email: DataTypes.STRING,
-    phone: DataTypes.STRING,
-    company: DataTypes.STRING,
-    // avatar: DataTypes.STRING,
     role: {
       type: DataTypes.ENUM('admin', 'biller'),
       defaultValue: 'biller'

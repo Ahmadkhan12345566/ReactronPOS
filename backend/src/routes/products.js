@@ -6,6 +6,7 @@ import csv from 'csv-parser';
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 // Get all products with associations
+// Update the GET route to work with the new model structure
 router.get('/', async (req, res) => {
   try {
     const products = await models.Product.findAll({
@@ -13,22 +14,35 @@ router.get('/', async (req, res) => {
         { model: models.Category, attributes: ['name'] },
         { model: models.Brand, attributes: ['name'] },
         { model: models.Unit, attributes: ['name'] },
-        { model: models.User, attributes: ['name'] }
+        { model: models.User, attributes: ['name'] },
+        { 
+          model: models.ProductVariant,
+          include: [{
+            model: models.Inventory,
+            include: [models.Warehouse]
+          }]
+        }
       ]
     });
     
     // Transform data to match frontend expectations
-    const transformedProducts = products.map(product => ({
-      id: product.id,
-      name: product.name,
-      category: product.Category ? product.Category.name : '',
-      brand: product.Brand ? product.Brand.name : '',
-      price: product.price,
-      unit: product.Unit ? product.Unit.name : '',
-      qty: product.qty,
-      image: product.image,
-      createdBy: product.createdBy,
-    }));
+    const transformedProducts = products.map(product => {
+      // Get the first variant for display purposes
+      const firstVariant = product.ProductVariants && product.ProductVariants[0];
+      const inventory = firstVariant && firstVariant.Inventories && firstVariant.Inventories[0];
+      
+      return {
+        id: product.id,
+        name: product.name,
+        category: product.Category ? product.Category.name : '',
+        brand: product.Brand ? product.Brand.name : '',
+        price: firstVariant ? firstVariant.price : 0,
+        unit: product.Unit ? product.Unit.name : '',
+        qty: inventory ? inventory.qty : 0,
+        image: product.image,
+        createdBy: product.createdBy,
+      };
+    });
     
     res.json(transformedProducts);
   } catch (error) {
@@ -37,25 +51,57 @@ router.get('/', async (req, res) => {
 });
 
 // POST /products
+// Update the POST route to properly extract all needed fields
 router.post('/', async (req, res) => {
   try {
-    const { name, price, qty, image, ...rest } = req.body;
+    const { 
+      name, 
+      description, 
+      status, 
+      slug, 
+      sellingType, 
+      productType, 
+      taxType, 
+      tax, 
+      discountType, 
+      discountValue, 
+      warranties, 
+      barcodeSymbology, 
+      image, 
+      categoryId, 
+      subCategoryId, 
+      brandId, 
+      unitId, 
+      supplierId, 
+      createdBy 
+    } = req.body;
 
     // Optional: Validate base64 string
-    if (!image || !image.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Invalid or missing base64 image string' });
+    if (image && !image.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Invalid base64 image string' });
     }
 
-    // Create product with base64 image
+    // Create product with the new schema
     const product = await models.Product.create({
       name,
-      price,
-      qty,
+      description,
+      status: status || 'Active',
+      slug,
+      sellingType,
+      productType,
+      taxType,
+      tax,
+      discountType,
+      discountValue,
+      warranties,
+      barcodeSymbology,
       image: image || null,
       categoryId,
-      brandId,     
+      subCategoryId,
+      brandId,
       unitId,
-      ...rest
+      supplierId,
+      createdBy
     });
 
     res.status(201).json(product);
@@ -64,7 +110,6 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 // Update a product
 router.put('/:id', async (req, res) => {

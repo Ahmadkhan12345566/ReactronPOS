@@ -1,215 +1,216 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import SupplierSelector from "../components/SupplierSelector";
-import OrderItemsTable from "../components/OrderItemsTable";
-import Accordion from "../components/forms/Accordion";
-import PageHeader from "../components/forms/PageHeader";
-import FormFooter from "../components/forms/FormFooter";
+import React, { useState, useEffect } from 'react';
+import Accordion from '../components/forms/Accordion';
+import PageHeader from '../components/forms/PageHeader';
+import FormFooter from '../components/forms/FormFooter';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 import {
+  ArrowPathIcon,
+  ChevronUpIcon,
   InformationCircleIcon,
-  DocumentTextIcon,
-  PlusCircleIcon,
-} from "@heroicons/react/24/outline";
+} from '@heroicons/react/24/outline';
 
 const AddPurchase = () => {
+  const [suppliers, setSuppliers] = useState([]);
   const navigate = useNavigate();
-  const [accordion, setAccordion] = useState({
-    purchaseInfo: true,
-    orderItems: false,
-    additionalInfo: false,
-  });
 
-  const [form, setForm] = useState({
-    supplier: "",
-    date: "",
-    reference: "",
-    status: "",
-    paymentMethod: "",
-    notes: "",
-    items: [],
-  });
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
 
-  const toggleAccordion = (section) => {
-    setAccordion(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+  const fetchSuppliers = async () => {
+    try {
+      const data = await api.get('/api/suppliers');
+      setSuppliers(data);
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+    }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting purchase:", form);
-    navigate("/purchases");
+    
+    try {
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Convert numeric fields
+      data.total = parseFloat(data.total) || 0;
+      data.paid = parseFloat(data.paid) || 0;
+      data.due = parseFloat(data.due) || 0;
+      data.supplierId = parseInt(data.supplierId);
+      
+      // Set current date if not provided
+      if (!data.date) {
+        data.date = new Date().toISOString().split('T')[0];
+      }
+      
+      console.log('Data to send:', data);
+      await api.post('/api/purchases', data);
+      navigate('/purchases');
+    } catch (error) {
+      console.error('Error creating purchase:', error);
+    }
   };
 
-  const dummyItems = [
-    {
-      code: "WM123",
-      name: "Wireless Mouse",
-      cost: 1000,
-      quantity: 2,
-      discount: 0,
-      subtotal: 2000,
-    },
-    {
-      code: "GK789",
-      name: "Gaming Keyboard",
-      cost: 2000,
-      quantity: 1,
-      discount: 10,
-      subtotal: 1800,
-    },
-  ];
+  const calculateDueAmount = (e) => {
+    const form = e.target.form;
+    const total = parseFloat(form.total.value) || 0;
+    const paid = parseFloat(form.paid.value) || 0;
+    form.due.value = (total - paid).toFixed(2);
+  };
 
   return (
     <div className="bg-gray-50 flex flex-col h-full p-6">
       <PageHeader 
-        title="Add New Purchase"
+        title="Create Purchase"
         subtitle="Create new purchase order"
         backPath="/purchases"
+        actionButtons={
+          <>
+            <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-full">
+              <ArrowPathIcon className="w-5 h-5" />
+            </button>
+            <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-full">
+              <ChevronUpIcon className="w-5 h-5" />
+            </button>
+          </>
+        }
       />
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 flex flex-col min-h-0 h-full">
+      <form className="bg-white rounded-xl shadow-sm p-6 flex flex-col min-h-0 h-full" onSubmit={handleSubmit}>
         <div className="flex-1 min-h-0 overflow-y-auto">
           <Accordion 
             title="Purchase Information"
             icon={InformationCircleIcon}
-            isOpen={accordion.purchaseInfo}
-            onToggle={() => toggleAccordion("purchaseInfo")}
+            isOpen={true}
+            onToggle={() => {}}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Supplier <span className="text-red-500">*</span>
+                  Reference <span className="text-red-500">*</span>
                 </label>
-                <SupplierSelector
-                  value={form.supplier}
-                  onChange={(val) => setForm({ ...form, supplier: val })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Purchase Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="date"
-                  type="date"
+                <input 
+                  name="reference"
+                  type="text" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  onChange={handleChange}
-                  value={form.date}
+                  placeholder="Enter reference number"
                   required
                 />
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Reference No
+                  Date <span className="text-red-500">*</span>
                 </label>
-                <input
-                  name="reference"
+                <input 
+                  name="date"
+                  type="date" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  onChange={handleChange}
-                  value={form.reference}
-                  placeholder="Enter reference number"
+                  required
+                  defaultValue={new Date().toISOString().split('T')[0]}
                 />
               </div>
-
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Supplier <span className="text-red-500">*</span>
+                </label>
+                <select 
+                  name="supplierId" 
+                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Select Supplier</option>
+                  {suppliers.map(supplier => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Status <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="status"
+                <select 
+                  name="status" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  onChange={handleChange}
-                  value={form.status}
                   required
                 >
-                  <option value="">Select status</option>
-                  <option value="Ordered">Ordered</option>
-                  <option value="Pending">Pending</option>
                   <option value="Received">Received</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Ordered">Ordered</option>
                 </select>
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Method <span className="text-red-500">*</span>
+                  Total Amount <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="paymentMethod"
+                <input 
+                  name="total"
+                  type="number" 
+                  step="0.01"
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  onChange={handleChange}
-                  value={form.paymentMethod}
+                  placeholder="0.00"
                   required
-                >
-                  <option value="">Select method</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Attachments
-                </label>
-                <input
-                  type="file"
-                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  onBlur={calculateDueAmount}
                 />
               </div>
-            </div>
-          </Accordion>
-
-          <Accordion 
-            title="Order Items"
-            icon={DocumentTextIcon}
-            isOpen={accordion.orderItems}
-            onToggle={() => toggleAccordion("orderItems")}
-          >
-            <div className="mb-4">
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Search product or scan barcode"
-              />
-            </div>
-            <OrderItemsTable items={dummyItems} />
-          </Accordion>
-
-          <Accordion 
-            title="Additional Information"
-            icon={PlusCircleIcon}
-            isOpen={accordion.additionalInfo}
-            onToggle={() => toggleAccordion("additionalInfo")}
-          >
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
-              </label>
-              <textarea
-                name="notes"
-                rows="3"
-                className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                value={form.notes}
-                onChange={handleChange}
-                placeholder="Enter purchase notes"
-              />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Paid Amount <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  name="paid"
+                  type="number" 
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0.00"
+                  required
+                  onBlur={calculateDueAmount}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Due Amount
+                </label>
+                <input 
+                  name="due"
+                  type="number" 
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-100"
+                  placeholder="0.00"
+                  readOnly
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Status <span className="text-red-500">*</span>
+                </label>
+                <select 
+                  name="payment_status" 
+                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="Paid">Paid</option>
+                  <option value="Unpaid">Unpaid</option>
+                  <option value="Overdue">Overdue</option>
+                </select>
+              </div>
             </div>
           </Accordion>
         </div>
 
         <FormFooter 
           cancelPath="/purchases" 
-          submitLabel="Save Purchase" 
-          onCancel={() => navigate("/purchases")}
+          submitLabel="Add Purchase" 
         />
       </form>
     </div>

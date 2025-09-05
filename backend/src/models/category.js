@@ -11,7 +11,15 @@ export default function CategoryModel(sequelize, DataTypes) {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active'
     },
-        image: DataTypes.TEXT('long'),
+    image: DataTypes.TEXT('long'),
+    createdBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id'
+      }
+    }
   }, {
     tableName: 'categories',
     timestamps: true
@@ -19,6 +27,10 @@ export default function CategoryModel(sequelize, DataTypes) {
 
   Category.associate = function(models) {
     Category.hasMany(models.Product, { foreignKey: 'categoryId' });
+    Category.belongsTo(models.User, { 
+      foreignKey: 'createdBy',
+      as: 'User'
+    });
   };
 
   return Category;

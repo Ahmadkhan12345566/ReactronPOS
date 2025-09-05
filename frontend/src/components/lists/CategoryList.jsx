@@ -12,7 +12,7 @@ import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function CategoryList({ categories, setShowForm }) {
+export default function CategoryList({ categories = [], setShowForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
@@ -20,38 +20,68 @@ export default function CategoryList({ categories, setShowForm }) {
   // Status options
   const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
 
+  // Format date function
+  const formatDate = (dateValue) => {
+    if (!dateValue) return '-';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   // Columns configuration using helpers
   const columns = [
     selectColumn(),
     indexColumn(),
+
+    // Category name
     {
       accessorKey: 'name',
       header: 'Category',
       size: 150,
     },
+
+    // Image (handles missing or empty urls)
     {
-      accessorKey: 'slug',
-      header: 'Category Slug',
-      size: 150,
+      id: 'image',
+      accessorFn: row => row.image || row.icon || '',
+      header: 'Image',
+      size: 90,
+      cell: ({ getValue }) => {
+        const src = getValue();
+        return src ? (
+          <img src={src} alt="cat" className="w-10 h-10 object-cover rounded-md" />
+        ) : <span className="text-xs text-gray-400">—</span>;
+      }
     },
-    {
-      accessorKey: 'createdOn',
-      header: 'Created On',
-      size: 120,
-    },
+
+    // Status (keep your helper which renders badges / colors)
     statusColumn('status', 'Status'),
+
+    // Created by: supports both createdBy and created_by
+    {
+      id: 'created_by',
+      accessorFn: row => row.createdBy ?? row.created_by ?? row.created_by_name ?? row.creatorName ?? null,
+      header: 'Created By',
+      size: 140,
+      cell: ({ getValue }) => getValue() || '-'
+    },
+
+
     actionsColumn(['edit', 'delete'])
   ];
 
   // Filtered data
   const filteredData = useMemo(() => {
     return categories.filter(cat => 
-      (statusFilter === 'All' || cat.status === statusFilter) &&
-      `${cat.name} ${cat.slug}`.toLowerCase().includes(search.toLowerCase())
+      (statusFilter === 'All' || (cat.status ?? '').toString() === statusFilter) &&
+      `${cat.name ?? ''}`.toLowerCase().includes(search.toLowerCase())
     );
   }, [categories, search, statusFilter]);
 
-  // Use UI hook
   const {
     table,
     controlButtons,
@@ -63,15 +93,14 @@ export default function CategoryList({ categories, setShowForm }) {
     columns,
     rowSelection,
     setRowSelection,
-    onAddItem: () => setShowForm(true),
+    onAddItem: () => setShowForm(),
     resetFilters: () => {
-          setSearch('');
-          setStatusFilter('All');
-          setRowSelection({});
-        }
+      setSearch('');
+      setStatusFilter('All');
+      setRowSelection({});
+    }
   });
 
- 
   return (
     <ListContainer>
       <ListHeader 

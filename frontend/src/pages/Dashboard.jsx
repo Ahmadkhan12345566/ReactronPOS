@@ -172,7 +172,7 @@ const Dashboard = () => {
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 ">Welcome back, {user?.name || "admin"}!</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50">
+        <button onClick={()=> window.location.reload()} className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50">
           <ArrowPathIcon className="w-5 h-5 mr-2" />
           Refresh
         </button>

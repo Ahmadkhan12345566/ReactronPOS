@@ -7,6 +7,9 @@ import ListHeader from '../ListComponents/ListHeader';
 import ListControlButtons from '../ListComponents/ListControlButtons';
 import ListTable from '../ListComponents/ListTable';
 import ListPagination from '../ListComponents/ListPagination';
+import ListFilter from '../ListComponents/ListFilter';
+import SearchInput from '../ListComponents/SearchInput';
+import SelectFilters from '../ListComponents/SelectFilters';
 import { useUI } from '../ListComponents/useUI';
 import { 
   selectColumn, 
@@ -107,13 +110,30 @@ const columns = [
         ))}
       />
       
-      {/* <ListFilter>
-      </ListFilter> */}
+      <ListFilter>
+      <SearchInput 
+        search={search} 
+        setSearch={setSearch} 
+      />
+      <SelectFilters 
+        statusFilter={categoryFilter} 
+        setStatusFilter={setCategoryFilter} 
+        statusOptions={categories} 
+        placeholder='Category'
+      />
+      <SelectFilters 
+        statusFilter={brandFilter} 
+        setStatusFilter={setBrandFilter} 
+        statusOptions={brands} 
+        placeholder='Brand'
+      />
+    </ListFilter>
+
       
       <ListTable 
         table={table} 
         emptyState={emptyState}
-        maxHeight={"max-h-[calc(100vh-18.5rem)]"}
+        maxHeight={"max-h-[calc(100vh-26rem)]"}
       />
       
       <ListPagination 

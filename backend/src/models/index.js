@@ -52,6 +52,10 @@ import OrderItemModel from './orderItem.js';
 import PurchaseItemModel from './purchaseItem.js';
 import ReturnItemModel from './returnItems.js';
 import ReportModel from './report.js';
+import SubCategoryModel from './subCategory.js';
+import ProductVariantModel from './productVariant.js';
+import WarehouseModel from './warehouse.js';
+import InventoryModel from './inventory.js';
 
 // Initialize models
 const models = {
@@ -70,6 +74,10 @@ const models = {
   PurchaseItem: PurchaseItemModel(sequelize, Sequelize.DataTypes),
   ReturnItem: ReturnItemModel(sequelize, Sequelize.DataTypes),
   Report: ReportModel(sequelize, Sequelize.DataTypes),
+  SubCategory: SubCategoryModel(sequelize, Sequelize.DataTypes),
+  ProductVariant: ProductVariantModel(sequelize, Sequelize.DataTypes),
+  Warehouse: WarehouseModel(sequelize, Sequelize.DataTypes),
+  Inventory: InventoryModel(sequelize, Sequelize.DataTypes)
 };
 
 // Set up associations
@@ -97,4 +105,7 @@ export const {
   PurchaseItem,
   ReturnItem,
   Report,
+  SubCategory,
+  ProductVariant,
+  Warehouse,
 } = models;

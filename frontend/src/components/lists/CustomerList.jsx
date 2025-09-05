@@ -12,7 +12,7 @@ import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function CustomerList({ customers, setShowForm }) {
+export default function CustomerList({ customers = [], setShowForm }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
@@ -23,7 +23,24 @@ export default function CustomerList({ customers, setShowForm }) {
   // Columns configuration using helpers
   const columns = [
     selectColumn(),
-    imageColumn('name', 'Customer', 'avatar'),
+    // Image (handles missing or empty urls)
+    {
+      id: 'image',
+      accessorFn: row => row.image || row.icon || '',
+      header: 'Image',
+      size: 90,
+      cell: ({ getValue }) => {
+        const src = getValue();
+        return src ? (
+          <img src={src} alt="cat" className="w-10 h-10 object-cover rounded-md" />
+        ) : <span className="text-xs text-gray-400">—</span>;
+      }
+    },
+    {
+      accessorKey: 'name',
+      header: 'Name',
+      size: 150,
+    },
     {
       accessorKey: 'email',
       header: 'Email',
@@ -32,6 +49,11 @@ export default function CustomerList({ customers, setShowForm }) {
     {
       accessorKey: 'phone',
       header: 'Phone',
+      size: 120,
+    },
+    {
+      accessorKey: 'city',
+      header: 'City',
       size: 120,
     },
     {
@@ -47,7 +69,7 @@ export default function CustomerList({ customers, setShowForm }) {
   const filteredData = useMemo(() => {
     return customers.filter(customer => 
       (statusFilter === 'All' || customer.status === statusFilter) &&
-      `${customer.name} ${customer.email} ${customer.phone} ${customer.country}`
+      `${customer.name || ''} ${customer.email || ''} ${customer.phone || ''} ${customer.city || ''} ${customer.country || ''}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
@@ -67,13 +89,11 @@ export default function CustomerList({ customers, setShowForm }) {
     setRowSelection,
     onAddItem: () => setShowForm(true),
     resetFilters: () => {
-          setSearch('');
-          setStatusFilter('All');
-          setRowSelection({});
-        }
+      setSearch('');
+      setStatusFilter('All');
+      setRowSelection({});
+    }
   });
-
-  
 
   return (
     <ListContainer>
@@ -87,7 +107,7 @@ export default function CustomerList({ customers, setShowForm }) {
       />
       
       <ListFilter>
-        <SearchInput search={search} setSearch={setSearch}/>
+        <SearchInput search={search} setSearch={setSearch} placeholder="Search customers..." />
         <SelectFilters 
           statusFilter={statusFilter} 
           setStatusFilter={setStatusFilter} 

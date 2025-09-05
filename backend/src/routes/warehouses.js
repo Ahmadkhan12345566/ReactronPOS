@@ -3,35 +3,30 @@ import { models } from '../models/index.js';
 
 const router = express.Router();
 
-// Get all customers
+// Get all warehouses
 router.get('/', async (req, res) => {
   try {
-    const customers = await models.Customer.findAll({
+    const warehouses = await models.Warehouse.findAll({
       where: { status: 'Active' }
     });
-    res.json(customers);
+    res.json(warehouses);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Create a new customer
+// Create a new warehouse
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, address, city, country, image, status } = req.body;
+    const { name, address, status } = req.body;
     
-    const customer = await models.Customer.create({
+    const warehouse = await models.Warehouse.create({
       name,
-      email,
-      phone,
       address,
-      city,
-      country,
-      image,
       status: status || 'Active'
     });
     
-    res.status(201).json(customer);
+    res.status(201).json(warehouse);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
