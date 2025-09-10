@@ -71,7 +71,7 @@ const AddProduct = () => {
     const randomNumber = Math.floor(Math.random() * 1000000); // Generates random number between 0-999999
     return `SK${randomNumber}`;
   };
-    const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
@@ -86,7 +86,50 @@ const AddProduct = () => {
       if (!user.id) throw new Error('User ID not found in localStorage');
       data.createdBy = user.id;
       
-      // Create product with variants
+      // Build variants array based on product type
+      let variants = [];
+      
+      if (data.productType === 'single') {
+        variants = [{
+          sku: data.sku,
+          itemBarcode: data.itemBarcode || '',
+          price: parseFloat(data.price) || 0,
+          cost: 0,
+          weight: 0,
+          attributes: {},
+          expiryDate: data.expiryDate || null,
+          manufacturedDate: data.manufacturedDate || null,
+          inventories: [{
+            warehouseId: data.warehouseId,
+            qty: parseInt(data.quantity) || 0,
+            quantityAlert: parseInt(data.quantityAlert) || 0
+          }]
+        }];
+      } else if (data.productType === 'variable') {
+        let index = 1;
+        while (data[`variantAttribute${index}`]) {
+          variants.push({
+            sku: data[`variantSKU${index}`],
+            itemBarcode: '',
+            price: parseFloat(data[`variantPrice${index}`]) || 0,
+            cost: 0,
+            weight: 0,
+            attributes: {
+              [data[`variantAttribute${index}`]]: data[`variantValue${index}`]
+            },
+            expiryDate: data.expiryDate || null,
+            manufacturedDate: data.manufacturedDate || null,
+            inventories: [{
+              warehouseId: data.warehouseId,
+              qty: parseInt(data[`variantQuantity${index}`]) || 0,
+              quantityAlert: parseInt(data.quantityAlert) || 0
+            }]
+          });
+          index++;
+        }
+      }
+      
+      // Create product with variants in a single request
       const productData = {
         name: data.name,
         description: data.description,
@@ -103,40 +146,17 @@ const AddProduct = () => {
         warranties: data.warranties,
         barcodeSymbology: data.barcodeSymbology,
         sellingType: data.sellingType,
-        image: data.image
+        image: data.image,
+        variants: variants
       };
       
-      // Create product
-      const product = await api.post('/api/products', productData);
-      
-      // Create default variant
-      const variantData = {
-        productId: product.id,
-        sku: data.sku,
-        itemBarcode: data.itemBarcode,
-        price: data.price,
-        attributes: data.attributes || {},
-        expiryDate: data.expiryDate,
-        manufacturedDate: data.manufacturedDate
-      };
-      
-      const variant = await api.post('/api/product-variants', variantData);
-      
-      // Create inventory entry
-      const inventoryData = {
-        variantId: variant.id,
-        warehouseId: data.warehouseId,
-        qty: data.quantity,
-        quantityAlert: data.quantityAlert
-      };
-      
-      await api.post('/api/inventory', inventoryData);
-      
+      await api.post('/api/products', productData);
       navigate('/products');
     } catch (error) {
       console.error('Error creating product:', error);
+      // Add user-friendly error handling here
     }
-  };
+};
 
   const toggleAccordion = (section) => {
     setAccordion(prev => ({

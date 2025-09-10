@@ -14,6 +14,7 @@ export default function ProductModel(sequelize, DataTypes) {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active'
     },
+    image: DataTypes.TEXT('long'),
     slug: DataTypes.STRING,
     sellingType: DataTypes.ENUM('Online', 'POS'),
     productType: DataTypes.ENUM('single', 'variable'),

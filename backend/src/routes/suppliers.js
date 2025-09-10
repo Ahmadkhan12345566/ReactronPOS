@@ -19,7 +19,6 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { name, email, phone, address, image, status } = req.body;
-    
     const supplier = await models.Supplier.create({
       name,
       email,

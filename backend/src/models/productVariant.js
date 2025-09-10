@@ -8,8 +8,14 @@ export default function ProductVariantModel(sequelize, DataTypes) {
     sku: { type: DataTypes.STRING, unique: true },
     itemBarcode: { type: DataTypes.STRING, unique: true },
     price: DataTypes.DECIMAL(10, 2),
-    cost: DataTypes.DECIMAL(10, 2),
-    weight: DataTypes.DECIMAL(10, 2),
+    cost: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0.00
+    },
+    weight: { 
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0.00
+    },
     attributes: DataTypes.JSON, // For variable products
     expiryDate: DataTypes.DATE,
     manufacturedDate: DataTypes.DATE,
