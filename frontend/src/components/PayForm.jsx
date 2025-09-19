@@ -73,6 +73,8 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
     e.preventDefault();
     onPaySubmit({
       ...formData,
+      method: formData.paymentType,
+      amountTendered: parseFloat(formData.receivedAmount) || 0,
       total: total.toFixed(2)
     });
     onClose();

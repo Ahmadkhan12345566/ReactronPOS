@@ -16,7 +16,9 @@ import warehouseRoutes from './routes/warehouses.js';
 import subCategoryRoutes from './routes/subCategories.js';
 import productVariantRoutes from './routes/productVariants.js';
 import inventoryRoutes from './routes/inventory.js';
-
+import salesReturnRoutes from './routes/salesReturns.js';
+import salesReportRoutes from './routes/salesReports.js';
+import invoiceRoutes from './routes/invoices.js';
 import { seedDatabase } from './initialData.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +46,9 @@ export async function startServer() {
   app.use('/api/sub-categories', subCategoryRoutes);
   app.use('/api/product-variants', productVariantRoutes);
   app.use('/api/inventory', inventoryRoutes);
+  app.use('/api/sales/returns', salesReturnRoutes);
+  app.use('/api/sales/report', salesReportRoutes);
+  app.use('/api/invoices', invoiceRoutes);
 
   app.use((err, req, res, next) => {
     console.error('Server error:', err);

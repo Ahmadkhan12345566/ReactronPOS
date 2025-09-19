@@ -15,7 +15,10 @@ router.get('/', async (req, res) => {
         { model: models.User, attributes: ['name'] },
         { 
           model: models.ProductVariant,
-          include: [{ model: models.Inventory, include: [models.Warehouse] }]
+          include: [{
+            model: models.Inventory,
+            required: false
+      }]
         }
       ]
     });
@@ -268,4 +271,65 @@ router.post('/import', async (req, res) => {
   res.status(501).json({ message: 'CSV import not implemented in this minimal route' });
 });
 
+// Add this route to products.js
+// GET /products/pos - get products with variants and inventory for POS
+// Update the /pos endpoint to return the correct structure
+router.get('/pos', async (req, res) => {
+  try {
+    const products = await models.Product.findAll({
+      where: { status: 'Active' },
+      include: [
+        { model: models.Category, attributes: ['name'] },
+        { model: models.Brand, attributes: ['name'] },
+        { model: models.Unit, attributes: ['name'] },
+        { 
+          model: models.ProductVariant,
+          include: [{
+            model: models.Inventory,
+            required: false  // Remove the where clause to include all warehouses
+          }]
+        }
+      ]
+    });
+
+    const transformedProducts = products.map(product => {
+      const variants = product.ProductVariants || [];
+      
+      // Calculate total quantity across all variants and warehouses
+      let totalQty = 0;
+      variants.forEach(variant => {
+        if (variant.Inventories && variant.Inventories.length > 0) {
+          variant.Inventories.forEach(inventory => {
+            totalQty += parseInt(inventory.qty || 0);
+          });
+        }
+      });
+
+      // Use the first variant's price, or a default
+      const price = variants[0] ? parseFloat(variants[0].price || 0) : 0;
+
+      return {
+        id: product.id,
+        name: product.name,
+        category: product.Category ? product.Category.name : '',
+        brand: product.Brand ? product.Brand.name : '',
+        price: price,
+        unit: product.Unit ? product.Unit.name : '',
+        qty: totalQty, // This is the total available quantity across all warehouses
+        image: product.image || null,
+        createdBy: product.User ? product.User.name : 'Unknown',
+        ProductVariants: variants.map(variant => ({
+          id: variant.id,
+          price: parseFloat(variant.price || 0),
+          Inventories: variant.Inventories || []
+        }))
+      };
+    });
+
+    res.json(transformedProducts);
+  } catch (error) {
+    console.error('GET /products/pos error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 export default router;

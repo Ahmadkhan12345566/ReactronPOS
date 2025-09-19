@@ -1,6 +1,4 @@
-// SaleList.jsx
 import React, { useState, useMemo } from 'react';
-// Import reusable components
 import ListContainer from '../ListComponents/ListContainer';
 import ListHeader from '../ListComponents/ListHeader';
 import ListControlButtons from '../ListComponents/ListControlButtons';
@@ -9,54 +7,32 @@ import ListTable from '../ListComponents/ListTable';
 import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
-
-// Reusable helpers + UI hook
 import {
   selectColumn,
   indexColumn,
   actionsColumn,
-  imageColumn,
   statusColumn
 } from '../ListComponents/columnHelpers';
 import { useUI } from '../ListComponents/useUI';
 
-export default function SalesList({ sales, setShowForm }) {
-  {window.setShowForm = setShowForm}
+export default function SalesList({ sales, onRefresh }) {
   const [search, setSearch] = useState('');
-  const [customerFilter, setCustomerFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
 
-  // Customer options
-  const customerOptions = useMemo(() => {
-    const customers = [...new Set(sales.map(sale => sale.customer.name))];
-    return ['All', ...customers];
-  }, [sales]);
-
-  // Status options
   const statusOptions = useMemo(() => ['All', 'Completed', 'Pending'], []);
-
-  // Payment status options
   const paymentStatusOptions = useMemo(() => ['All', 'Paid', 'Unpaid', 'Overdue'], []);
 
-  // Columns configuration (use helpers where appropriate)
-  const columns = useMemo(() => ([
+  const columns = useMemo(() => [
     selectColumn(),
     indexColumn(),
     {
-      accessorKey: 'customer',
+      accessorKey: 'Customer.name',
       header: 'Customer',
       cell: ({ row }) => (
         <div className="flex items-center">
-          <div className="bg-gray-100 rounded-full p-1 mr-3">
-            <img
-              src={row.original.customer?.avatar}
-              alt={row.original.customer?.name}
-              className="w-8 h-8 rounded-full object-cover"
-            />
-          </div>
-          <span>{row.original.customer?.name}</span>
+          <span>{row.original.Customer?.name || 'N/A'}</span>
         </div>
       ),
       size: 200,
@@ -69,11 +45,12 @@ export default function SalesList({ sales, setShowForm }) {
     {
       accessorKey: 'date',
       header: 'Date',
+      cell: ({ getValue }) => new Date(getValue()).toLocaleDateString(),
       size: 120,
     },
     statusColumn('status', 'Status', 100),
     {
-      accessorKey: 'grandTotal',
+      accessorKey: 'total',
       header: 'Grand Total',
       cell: ({ getValue }) => <span>${getValue()}</span>,
       size: 100,
@@ -90,24 +67,24 @@ export default function SalesList({ sales, setShowForm }) {
       cell: ({ getValue }) => <span>${getValue()}</span>,
       size: 100,
     },
-    statusColumn('paymentStatus', 'Payment Status', 120),
+    statusColumn('payment_status', 'Payment Status', 120),
     {
-      accessorKey: 'biller',
+      accessorKey: 'User.name',
       header: 'Biller',
       size: 100,
     },
     actionsColumn(['view', 'edit', 'delete'], 80)
-  ]), []);
+  ], []);
 
-  // Filtered data (no logic changes)
+  // Update filteredData to use correct field names
   const filteredData = useMemo(() => {
-    return sales.filter(sale =>
-      (customerFilter === 'All' || sale.customer.name === customerFilter) &&
-      (statusFilter === 'All' || sale.status === statusFilter) &&
-      (paymentStatusFilter === 'All' || sale.paymentStatus === paymentStatusFilter) &&
-      `${sale.customer.name} ${sale.reference} ${sale.biller}`.toLowerCase().includes(search.toLowerCase())
+    return salesReturns.filter(item => 
+      (customerFilter === 'All' || item.customer.name === customerFilter) &&
+      (statusFilter === 'All' || item.status === statusFilter) &&
+      (paymentStatusFilter === 'All' || item.paymentStatus === paymentStatusFilter) &&
+      `${item.product?.name || ''} ${item.customer.name}`.toLowerCase().includes(search.toLowerCase())
     );
-  }, [sales, search, customerFilter, statusFilter, paymentStatusFilter]);
+  }, [salesReturns, search, customerFilter, statusFilter, paymentStatusFilter]);
 
   const {
     table,
@@ -120,34 +97,44 @@ export default function SalesList({ sales, setShowForm }) {
     columns,
     rowSelection,
     setRowSelection,
-    onAddItem: () => setShowForm(true),
+    onAddItem: () => console.log('Add sale'),
     onSortToggle: () => console.log('Collapse clicked'),
     resetFilters: () => {
-          setSearch('');
-          setCustomerFilter('All');
-          setStatusFilter('All');
-          setPaymentStatusFilter('All');
-        }
+      setSearch('');
+      setStatusFilter('All');
+      setPaymentStatusFilter('All');
+    }
   });
 
-  
   return (
     <ListContainer>
       <ListHeader
         title="POS Orders"
         description="Manage Your pos orders"
         controlButtons={<ListControlButtons buttons={controlButtons} />}
-        primaryButtons={primaryButtons.map((btn, i) => <React.Fragment key={i}>{btn.element}</React.Fragment>)}
+        primaryButtons={primaryButtons.map((btn, i) => (
+          <React.Fragment key={i}>{btn.element}</React.Fragment>
+        ))}
       />
 
       <ListFilter>
         <SearchInput search={search} setSearch={setSearch} />
-        <SelectFilters statusFilter={statusFilter} setStatusFilter={setStatusFilter} statusOptions={statusOptions} />
+        <SelectFilters 
+          statusFilter={statusFilter} 
+          setStatusFilter={setStatusFilter} 
+          statusOptions={statusOptions} 
+        />
+        <SelectFilters 
+          statusFilter={paymentStatusFilter} 
+          setStatusFilter={setPaymentStatusFilter} 
+          statusOptions={paymentStatusOptions} 
+          placeholder="Payment Status"
+        />
       </ListFilter>
 
       <ListTable
         table={table}
-        emptyState={filteredData.length === 0 ? emptyState : emptyState}
+        emptyState={emptyState}
         maxHeight={"max-h-[calc(100vh-26rem)]"}
       />
 

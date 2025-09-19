@@ -70,9 +70,10 @@ export default function SalesReportList({ reports }) {
         ),
         size: 200,
       },
-      {
+      {  
         accessorKey: 'product.brand',
         header: 'Brand',
+        cell: ({ row }) => <span>{row.original.product.brand || 'No Brand'}</span>,
         size: 120,
       },
       {

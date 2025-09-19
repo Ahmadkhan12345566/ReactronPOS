@@ -5,8 +5,8 @@ export default function ProductVariantModel(sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
-    sku: { type: DataTypes.STRING, unique: true },
-    itemBarcode: { type: DataTypes.STRING, unique: true },
+    sku: { type: DataTypes.STRING },
+    itemBarcode: { type: DataTypes.STRING },
     price: DataTypes.DECIMAL(10, 2),
     cost: {
       type: DataTypes.DECIMAL(10, 2),

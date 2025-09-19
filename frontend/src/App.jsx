@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import AddProduct from './pages/AddProduct';
 import Sales from './pages/Sales';
+import AddSales from './pages/AddSales';
 import Purchases from './pages/Purchases';
 import AddPurchase from './pages/AddPurchase';
 import Navbar from './components/NavBar';
@@ -59,6 +60,7 @@ function App() {
             <Route path="/products/add" element={<AddProduct />} />
             <Route path="/pos" element={<POS />} />
             <Route path="/sales" element={<Sales />} />
+            <Route path="/sales/add" element={<AddSales />} />
             <Route path="sales/report" element={<SalesReport />} />
             <Route path="/purchases" element={<Purchases />} />
             <Route path="/purchases/add" element={<AddPurchase />} />

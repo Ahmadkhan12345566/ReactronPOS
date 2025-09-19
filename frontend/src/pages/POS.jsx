@@ -21,7 +21,7 @@ export default function POS() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const discount = 5.00;
   const tax = subtotal * 0.08;
   const total = subtotal + tax - discount;
@@ -35,8 +35,9 @@ export default function POS() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const data = await api.get('/api/products');
+      const data = await api.get('/api/products/pos');
       setProducts(data);
+      console.log(data);
     } catch (err) {
       setError('Failed to fetch products');
       console.error(err);
@@ -58,37 +59,72 @@ export default function POS() {
   const filteredProducts = products
     .filter(product => activeCategory === 'all' || product.category === activeCategory)
     .filter(product => product.name.toLowerCase().includes(searchTerm.toLowerCase()));
+function addQuantity(item) {
+  const product = products.find(p => p.id === item.id);
+  if (product) {
+    addToOrder(product);
+  }
+}
+// Update the addToOrder function
+function addToOrder(product) {
+  // Check if product has variants
+  if (!product.ProductVariants || product.ProductVariants.length === 0) {
+    setError(`No variants available for ${product.name}. Please add a variant in the product management.`);
+    return;
+  }
 
-  function addToOrder(product) {
-    // Check if product has sufficient stock
-    if (product.qty <= 0) {
-      setError(`Insufficient stock for ${product.name}`);
-      return;
-    }
-
-    setOrderItems(prev => {
-      const exist = prev.find((item) => item.id === product.id);
-      if (exist) {
-        // Check if we're exceeding available stock
-        if (exist.qty + 1 > product.qty) {
-          setError(`Only ${product.qty} units available for ${product.name}`);
-          return prev;
-        }
-        return prev.map((item) => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
-      } else {
-        // Check if we're exceeding available stock
-        if (1 > product.qty) {
-          setError(`Only ${product.qty} units available for ${product.name}`);
-          return prev;
-        }
-        return [...prev, { 
-          ...product, 
-          qty: 1
-        }];
-      }
+  // Use the first variant for now
+  const variant = product.ProductVariants[0];
+  
+  // Check inventory for this variant
+  let availableQty = 0;
+  if (variant.Inventories) {
+    variant.Inventories.forEach(inv => {
+      availableQty += parseInt(inv.qty || 0);
     });
   }
-  function clearAll() {
+
+  if (availableQty <= 0) {
+    setError(`Insufficient stock for ${product.name}`);
+    return;
+  }
+
+  setOrderItems(prev => {
+    const exist = prev.find((item) => item.id === product.id && item.variantId === variant.id);
+    if (exist) {
+      if (exist.quantity + 1 > availableQty) {
+        setError(`Only ${availableQty} units available for ${product.name}`);
+        return prev;
+      }
+      return prev.map((item) => 
+        item.id === product.id && item.variantId === variant.id 
+          ? { ...item, quantity: item.quantity + 1 } 
+          : item
+      );
+    } else {
+      if (1 > availableQty) {
+        setError(`Only ${availableQty} units available for ${product.name}`);
+        return prev;
+      }
+      return [...prev, { 
+        ...product, 
+        variantId: variant.id,
+        quantity: 1,
+        unitPrice: variant.price,
+        price: variant.price // Keep for UI compatibility
+      }];
+    }
+  });
+}
+
+
+// Update the removeQuantity function
+function removeQuantity(item) {
+  setOrderItems(orderItems.map((newItem) => 
+    newItem.id === item.id ? { ...newItem, quantity: newItem.quantity - 1 } : newItem
+  ).filter(newItem => newItem.quantity !== 0));
+}
+function clearAll() {
     setSelectedCustomer('walk-in');
     setSearchTerm('');
     setActiveCategory('all');
@@ -96,62 +132,77 @@ export default function POS() {
     setError(null);
   }
 
-  function removeQuantity(item) {
-    setOrderItems(orderItems.map((newItem) => 
-      newItem.id === item.id ? { ...newItem, quantity: newItem.quantity - 1 } : newItem
-    ).filter(newItem => newItem.quantity !== 0));
-  }
+  // Update the processOrder function
+// Update the processOrder function to include the paid amount
+const processOrder = async (paymentData) => {
+  try {
+    // Get the actual customer ID (not the string 'walk-in')
+    const customerId = selectedCustomer === 'walk-in' 
+      ? customers.find(c => c.name === 'Walk-in Customer')?.id 
+      : selectedCustomer;
 
-  const processOrder = async (paymentData) => {
-    try {
-      // Validate inventory before processing
-      for (const item of orderItems) {
-        const product = products.find(p => p.id === item.id);
-        if (!product || product.quantity < item.quantity) {
-          throw new Error(`Insufficient stock for ${item.name}. Available: ${product ? product.quantity : 0}, Requested: ${item.quantity}`);
-        }
-      }
-
-      // Prepare order data
-      const orderData = {
-        customerId: selectedCustomer === 'walk-in' ? null : selectedCustomer,
-        userId: currentUser?.id,
-        items: orderItems.map(item => ({
-          productId: item.id,
-          quantity: item.quantity,
-          unitPrice: item.price,
-          discount: 0, // You can add discount logic if needed
-          subtotal: item.price * item.quantity
-        })),
-        subtotal,
-        discount,
-        tax,
-        total,
-        paymentMethod: paymentData.method,
-        amountTendered: paymentData.amountTendered,
-        change: paymentData.change
-      };
-
-      // Send to backend
-      const result = await api.post('/api/sales', orderData);
-      
-      // Update local product quantities
-      const updatedProducts = products.map(product => {
-        const orderedItem = orderItems.find(item => item.id === product.id);
-        if (orderedItem) {
-          return { ...product, quantity: product.quantity - orderedItem.quantity };
-        }
-        return product;
-      });
-      
-      setProducts(updatedProducts);
-      setShowReceipt(true);
-      return result;
-    } catch (err) {
-      setError(err.message || 'Failed to process order');
-      throw err;
+    if (!customerId) {
+      throw new Error('No valid customer selected');
     }
-  };
+
+    // Prepare order data matching Sale model structure
+    const orderData = {
+      reference: `POS-${Date.now()}`,
+      date: new Date().toISOString().split('T')[0],
+      status: 'Completed',
+      payment_status: 'Paid',
+      payment_method: paymentData.method,
+      subtotal: subtotal,
+      discount: discount,
+      tax: tax,
+      shipping: 0,
+      total: total,
+      paid: paymentData.amountTendered, // This should be the amount from the payment modal
+      due: 0,
+      note: '',
+      customerId: customerId,
+      userId: currentUser?.id,
+      orderItems: orderItems.map(item => ({
+        productId: item.id,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: item.unitPrice * item.quantity
+      }))
+    };
+
+    const result = await api.post('/api/sales', orderData);
+    
+    // Update local product quantities
+    const updatedProducts = products.map(product => {
+      const orderedItems = orderItems.filter(item => item.id === product.id);
+      if (orderedItems.length > 0) {
+        // Create a deep copy to avoid direct state mutation
+        const updatedProduct = JSON.parse(JSON.stringify(product));
+        updatedProduct.ProductVariants = updatedProduct.ProductVariants.map(variant => {
+          const orderedVariant = orderedItems.find(item => item.variantId === variant.id);
+          if (orderedVariant) {
+            // Update inventory for the variant
+            if (variant.Inventories && variant.Inventories.length > 0) {
+              variant.Inventories[0].qty -= orderedVariant.quantity;
+            }
+          }
+          return variant;
+        });
+        return updatedProduct;
+      }
+      return product;
+    });
+    
+    setProducts(updatedProducts);
+    setShowReceipt(true);
+    return result;
+  } catch (err) {
+    setError(err.message || 'Failed to process order');
+    throw err;
+  }
+};
+
 
   if (loading) return <div className="p-6">Loading products...</div>;
 

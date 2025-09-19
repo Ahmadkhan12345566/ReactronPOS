@@ -147,7 +147,9 @@ const AddProduct = () => {
         barcodeSymbology: data.barcodeSymbology,
         sellingType: data.sellingType,
         image: data.image,
-        variants: variants
+        variants: variants,
+        supplierId: data.supplierId,
+        slug: data.slug
       };
       
       await api.post('/api/products', productData);

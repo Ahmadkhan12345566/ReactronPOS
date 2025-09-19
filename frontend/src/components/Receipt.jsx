@@ -116,9 +116,9 @@ export default function Receipt({
               {orderItems.map((item,i)=>(
                 <tr key={item.id} className="border-b border-gray-100">
                   <td className="py-2">{i+1}. {item.name}</td>
-                  <td className="py-2 text-center">PKR {item.price.toFixed(2)}</td>
+                  <td className="py-2 text-center">PKR {parseFloat(item.price).toFixed(2)}</td>
                   <td className="py-2 text-center">{item.qty}</td>
-                  <td className="py-2 text-right">PKR {(item.price*item.qty).toFixed(2)}</td>
+                  <td className="py-2 text-right">PKR {(parseFloat(item.price)*parseFloat(item.qty)).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -141,7 +141,7 @@ export default function Receipt({
             ))}
             <div className="flex justify-between pt-2 border-t border-gray-200 font-semibold">
               <span>Total:</span>
-              <span>PKR {total.toFixed(2)}</span>
+              <span>PKR {parseFloat(total).toFixed(2)}</span>
             </div>
           </div>
 
