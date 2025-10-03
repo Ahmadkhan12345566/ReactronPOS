@@ -41,6 +41,7 @@ export async function startServer() {
   app.use('/api/customers', customersRoute);
   app.use('/api/suppliers', suppliersRoute);
   app.use('/api/purchases', (await import('./routes/purchases.js')).default);
+  app.use('/api/purchase/report', (await import("./routes/purchaseRoutes.js")).default);
   app.use('/api/billers', billersRoute);
   app.use('/api/warehouses', warehouseRoutes);
   app.use('/api/sub-categories', subCategoryRoutes);
@@ -49,6 +50,7 @@ export async function startServer() {
   app.use('/api/sales/returns', salesReturnRoutes);
   app.use('/api/sales/report', salesReportRoutes);
   app.use('/api/invoices', invoiceRoutes);
+  app.use('/api/dashboard', (await import('./routes/dashboard.js')).default);
 
   app.use((err, req, res, next) => {
     console.error('Server error:', err);

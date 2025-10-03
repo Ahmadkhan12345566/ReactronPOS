@@ -12,20 +12,21 @@ import DateRangePicker from '../ListComponents/DateRangePicker';
 import SelectField from '../ListComponents/SelectField';
 import GenerateButton from '../ListComponents/GenerateButton';
 import ListControlButtons from '../ListComponents/ListControlButtons';
+import SearchInput from '../ListComponents/SearchInput';
 
 export default function PurchaseReportList({ reports }) {
   const [search, setSearch] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [storeFilter, setStoreFilter] = useState('All');
+  const [supplierFilter, setSupplierFilter] = useState('All');
   const [productFilter, setProductFilter] = useState('All');
   
-  // Store options
-  const storeOptions = ['All', 'Main Store', 'Warehouse', 'Outlet'];
+  // Supplier options
+  const supplierOptions = ['All', 'Main Supplier', 'Electro Mart', 'Prime Suppliers'];
   
   // Product options
   const productOptions = useMemo(() => {
-    const products = [...new Set(reports.map(report => report.product.name))];
+    const products = [...new Set(reports.map(report => report.product?.name).filter(Boolean))];
     return ['All', ...products];
   }, [reports]);
 
@@ -37,17 +38,19 @@ export default function PurchaseReportList({ reports }) {
       header: 'Reference',
       size: 100,
       cell: ({ getValue }) => (
-        <a href="#" className="text-blue-600 hover:underline">{getValue()}</a>
+        <a href="#" className="text-blue-600 hover:underline">{getValue() || 'N/A'}</a>
       )
     },
     {
       accessorKey: 'sku',
       header: 'SKU',
       size: 80,
+      cell: ({ getValue }) => <span>{getValue() || 'N/A'}</span>,
     },
     {
       accessorKey: 'dueDate',
-      header: 'Due Date',
+      header: 'Date',
+      cell: ({ getValue }) => getValue ? new Date(getValue()).toLocaleDateString() : 'N/A',
       size: 120,
     },
     {
@@ -55,14 +58,16 @@ export default function PurchaseReportList({ reports }) {
       header: 'Product Name',
       cell: ({ row }) => (
         <div className="flex items-center">
-          <div className="bg-gray-100 rounded-full p-1 mr-3">
-            <img 
-              src={row.original.product.image} 
-              alt={row.original.product.name} 
-              className="w-8 h-8 rounded-full object-cover"
-            />
-          </div>
-          <span>{row.original.product.name}</span>
+          {row.original.product?.image && (
+            <div className="bg-gray-100 rounded-full p-1 mr-3">
+              <img 
+                src={row.original.product.image} 
+                alt={row.original.product.name} 
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            </div>
+          )}
+          <span>{row.original.product?.name || 'Unknown Product'}</span>
         </div>
       ),
       size: 200,
@@ -70,24 +75,27 @@ export default function PurchaseReportList({ reports }) {
     {
       accessorKey: 'category',
       header: 'Category',
+      cell: ({ getValue }) => <span>{getValue() || 'Uncategorized'}</span>,
       size: 100,
     },
     {
       accessorKey: 'stockQty',
       header: 'Instock Qty',
+      cell: ({ getValue }) => <span className="text-center block">{getValue() || 0}</span>,
       size: 100,
       meta: { align: 'center' }
     },
     {
       accessorKey: 'purchaseQty',
       header: 'Purchase Qty',
+      cell: ({ getValue }) => <span className="text-center block">{getValue() || 0}</span>,
       size: 100,
       meta: { align: 'center' }
     },
     {
       accessorKey: 'purchaseAmount',
       header: 'Purchase Amount',
-      cell: ({ getValue }) => <span>${getValue()}</span>,
+      cell: ({ getValue }) => <span>${getValue() || 0}</span>,
       size: 120,
     }
   ];
@@ -95,22 +103,22 @@ export default function PurchaseReportList({ reports }) {
   // Filtered data
   const filteredData = useMemo(() => {
     return reports.filter(report => {
-      const passesStore = storeFilter === 'All' || report.store === storeFilter;
-      const passesProduct = productFilter === 'All' || report.product.name === productFilter;
-      const passesSearch = `${report.reference} ${report.sku} ${report.product.name} ${report.category}`
+      const passesSupplier = supplierFilter === 'All' || report.supplier === supplierFilter;
+      const passesProduct = productFilter === 'All' || report.product?.name === productFilter;
+      const passesSearch = `${report.reference || ''} ${report.sku || ''} ${report.product?.name || ''} ${report.category || ''}`
                           .toLowerCase()
                           .includes(search.toLowerCase());
       
-      const reportDate = new Date(report.dueDate);
+      const reportDate = report.dueDate ? new Date(report.dueDate) : null;
       const from = fromDate ? new Date(fromDate) : null;
       const to = toDate ? new Date(toDate) : null;
 
-      const passesFrom = from ? reportDate >= from : true;
-      const passesTo = to ? reportDate <= to : true;
+      const passesFrom = from && reportDate ? reportDate >= from : true;
+      const passesTo = to && reportDate ? reportDate <= to : true;
 
-      return passesStore && passesProduct && passesSearch && passesFrom && passesTo;
+      return passesSupplier && passesProduct && passesSearch && passesFrom && passesTo;
     });
-  }, [reports, search, storeFilter, productFilter, fromDate, toDate]);
+  }, [reports, search, supplierFilter, productFilter, fromDate, toDate]);
 
   // Use UI hook
   const {
@@ -126,7 +134,7 @@ export default function PurchaseReportList({ reports }) {
     onAddItem: false,
     resetFilters: () => {
       setSearch('');
-      setStoreFilter('All');
+      setSupplierFilter('All');
       setProductFilter('All');
       setFromDate('');
       setToDate('');
@@ -142,24 +150,29 @@ export default function PurchaseReportList({ reports }) {
       />
       
       <ListFilter>
-          <div className="grid grid-cols-1 md:grid-cols-10 gap-4">
-            <div className="md:col-span-4">
-              <DateRangePicker
-                fromDate={fromDate}
-                toDate={toDate}
-                setFromDate={setFromDate}
-                setToDate={setToDate}
-              />
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 w-full">
+          <SearchInput 
+            search={search} 
+            setSearch={setSearch} 
+            placeholder="Search purchase reports..."
+          />
+
+          <div className="flex flex-wrap gap-3">
+            <DateRangePicker
+              fromDate={fromDate}
+              toDate={toDate}
+              setFromDate={setFromDate}
+              setToDate={setToDate}
+            />
 
             <SelectField
-              name="store"
-              label="Store"
-              value={storeFilter}
-              onChange={setStoreFilter}
-              options={storeOptions}
-              placeholder="All Stores"
-              colClass="md:col-span-3"
+              name="supplier"
+              label="Supplier"
+              value={supplierFilter}
+              onChange={setSupplierFilter}
+              options={supplierOptions}
+              placeholder="All Suppliers"
+              widthClass="w-full md:w-40"
             />
 
             <SelectField
@@ -169,13 +182,12 @@ export default function PurchaseReportList({ reports }) {
               onChange={setProductFilter}
               options={productOptions}
               placeholder="All Products"
-              colClass="md:col-span-2"
+              widthClass="w-full md:w-40"
             />
 
-            <div className="md:col-span-1 flex items-end">
-              <GenerateButton onClick={() => console.log('Generate report')} />
-            </div>
+            <GenerateButton onClick={() => console.log('Generate report')} />
           </div>
+        </div>
       </ListFilter>
       
       <ListTable 

@@ -15,14 +15,25 @@ import {
 } from '../ListComponents/columnHelpers';
 import { useUI } from '../ListComponents/useUI';
 
-export default function SalesList({ sales, onRefresh }) {
+export default function SalesList({ sales = [], onRefresh }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
+  const [customerFilter, setCustomerFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
 
   const statusOptions = useMemo(() => ['All', 'Completed', 'Pending'], []);
   const paymentStatusOptions = useMemo(() => ['All', 'Paid', 'Unpaid', 'Overdue'], []);
+
+  // derive customer options from sales data
+  const customerOptions = useMemo(() => {
+    const names = new Set();
+    (sales || []).forEach(s => {
+      const name = s.Customer?.name || s.customer?.name;
+      if (name) names.add(name);
+    });
+    return ['All', ...Array.from(names)];
+  }, [sales]);
 
   const columns = useMemo(() => [
     selectColumn(),
@@ -32,7 +43,7 @@ export default function SalesList({ sales, onRefresh }) {
       header: 'Customer',
       cell: ({ row }) => (
         <div className="flex items-center">
-          <span>{row.original.Customer?.name || 'N/A'}</span>
+          <span>{row.original.Customer?.name || row.original.customer?.name || 'N/A'}</span>
         </div>
       ),
       size: 200,
@@ -71,20 +82,38 @@ export default function SalesList({ sales, onRefresh }) {
     {
       accessorKey: 'User.name',
       header: 'Biller',
-      size: 100,
+      size: 140,
+      cell: ({ getValue }) => getValue() || 'Unknown'
     },
     actionsColumn(['view', 'edit', 'delete'], 80)
   ], []);
 
-  // Update filteredData to use correct field names
+  // Corrected filteredData (use `sales` prop and handle possible field-name variants)
   const filteredData = useMemo(() => {
-    return salesReturns.filter(item => 
-      (customerFilter === 'All' || item.customer.name === customerFilter) &&
-      (statusFilter === 'All' || item.status === statusFilter) &&
-      (paymentStatusFilter === 'All' || item.paymentStatus === paymentStatusFilter) &&
-      `${item.product?.name || ''} ${item.customer.name}`.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [salesReturns, search, customerFilter, statusFilter, paymentStatusFilter]);
+    const q = (search || '').trim().toLowerCase();
+
+    return (sales || []).filter(item => {
+      const customerName = item.Customer?.name || item.customer?.name || '';
+      const productName = item.product?.name || item.Product?.name || '';
+      const reference = item.reference || '';
+
+      // status could be item.status
+      const statusMatch = statusFilter === 'All' || item.status === statusFilter;
+
+      // payment status could be item.payment_status or item.paymentStatus
+      const payment = item.payment_status ?? item.paymentStatus ?? '';
+      const paymentMatch = paymentStatusFilter === 'All' || payment === paymentStatusFilter;
+
+      // customer filter (if you want exact match; change to includes() if you prefer)
+      const customerMatch = customerFilter === 'All' || customerName === customerFilter;
+
+      // search: check reference, customer name, product name
+      const searchSource = `${reference} ${customerName} ${productName}`.toLowerCase();
+      const searchMatch = !q || searchSource.includes(q);
+
+      return statusMatch && paymentMatch && customerMatch && searchMatch;
+    });
+  }, [sales, search, customerFilter, statusFilter, paymentStatusFilter]);
 
   const {
     table,
@@ -103,6 +132,7 @@ export default function SalesList({ sales, onRefresh }) {
       setSearch('');
       setStatusFilter('All');
       setPaymentStatusFilter('All');
+      setCustomerFilter('All');
     }
   });
 
@@ -129,6 +159,13 @@ export default function SalesList({ sales, onRefresh }) {
           setStatusFilter={setPaymentStatusFilter} 
           statusOptions={paymentStatusOptions} 
           placeholder="Payment Status"
+        />
+        {/* Add a customer filter dropdown */}
+        <SelectFilters
+          statusFilter={customerFilter}
+          setStatusFilter={setCustomerFilter}
+          statusOptions={customerOptions}
+          placeholder="Customer"
         />
       </ListFilter>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowPathIcon,
   CurrencyDollarIcon,
@@ -6,74 +6,106 @@ import {
   UserGroupIcon,
   CubeIcon,
 } from '@heroicons/react/24/outline';
-
-// Dummy data for dashboard cards
-const stats = [
-  {
-    title: "Total Revenue",
-    value: "$45,231.89",
-    change: "+20.1% from last month",
-    icon: CurrencyDollarIcon,
-    color: "bg-green-100 text-green-600"
-  },
-  {
-    title: "Total Orders",
-    value: "1,235",
-    change: "+12.3% from last month",
-    icon: ShoppingBagIcon,
-    color: "bg-blue-100 text-blue-600"
-  },
-  {
-    title: "Total Customers",
-    value: "1,582",
-    change: "+18.4% from last month",
-    icon: UserGroupIcon,
-    color: "bg-purple-100 text-purple-600"
-  },
-  {
-    title: "Total Products",
-    value: "324",
-    change: "+5.2% from last month",
-    icon: CubeIcon,
-    color: "bg-amber-100 text-amber-600"
-  }
-];
-
-// Revenue data for bar chart
-const revenueData = [
-  { month: 'Jan', revenue: 4000, orders: 120 },
-  { month: 'Feb', revenue: 3000, orders: 98 },
-  { month: 'Mar', revenue: 5000, orders: 150 },
-  { month: 'Apr', revenue: 2780, orders: 110 },
-  { month: 'May', revenue: 1890, orders: 85 },
-  { month: 'Jun', revenue: 2390, orders: 105 },
-  { month: 'Jul', revenue: 3490, orders: 130 },
-  { month: 'Aug', revenue: 4200, orders: 145 },
-  { month: 'Sep', revenue: 3800, orders: 125 },
-  { month: 'Oct', revenue: 4500, orders: 160 },
-  { month: 'Nov', revenue: 5200, orders: 180 },
-  { month: 'Dec', revenue: 6100, orders: 200 },
-];
-
-// Sales distribution data for pie chart
-const salesDistribution = [
-  { category: 'Food', value: 45, color: '#4F46E5' },
-  { category: 'Cold Drinks', value: 25, color: '#10B981' },
-  { category: 'Hot Drinks', value: 30, color: '#F59E0B' },
-];
+import { api } from '../services/api';
 
 const Dashboard = () => {
-  // Chart data
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeChart, setActiveChart] = useState('revenue');
   const [user] = useState(JSON.parse(localStorage.getItem('user')));
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get('/api/dashboard');
+      setDashboardData(data);
+    } catch (err) {
+      setError('Failed to fetch dashboard data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Stats cards data
+  const stats = [
+    {
+      title: "Total Revenue",
+      value: `$${dashboardData?.stats?.totalRevenue?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`,
+      change: "+20.1% from last month", // You can calculate this from historical data
+      icon: CurrencyDollarIcon,
+      color: "bg-green-100 text-green-600"
+    },
+    {
+      title: "Total Orders",
+      value: dashboardData?.stats?.totalOrders?.toLocaleString() || '0',
+      change: "+12.3% from last month",
+      icon: ShoppingBagIcon,
+      color: "bg-blue-100 text-blue-600"
+    },
+    {
+      title: "Total Customers",
+      value: dashboardData?.stats?.totalCustomers?.toLocaleString() || '0',
+      change: "+18.4% from last month",
+      icon: UserGroupIcon,
+      color: "bg-purple-100 text-purple-600"
+    },
+    {
+      title: "Total Products",
+      value: dashboardData?.stats?.totalProducts?.toLocaleString() || '0',
+      change: "+5.2% from last month",
+      icon: CubeIcon,
+      color: "bg-amber-100 text-amber-600"
+    }
+  ];
+
+  // Summary cards for sales report section
+  const salesSummary = [
+    { 
+      title: 'Total Amount', 
+      value: `$${dashboardData?.summaryCards?.totalAmount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`, 
+      icon: CurrencyDollarIcon, 
+      color: 'bg-green-500' 
+    },
+    { 
+      title: 'Total Paid', 
+      value: `$${dashboardData?.summaryCards?.totalPaid?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`, 
+      icon: ShoppingBagIcon, 
+      color: 'bg-blue-500' 
+    },
+    { 
+      title: 'Total Unpaid', 
+      value: `$${dashboardData?.summaryCards?.totalUnpaid?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`, 
+      icon: UserGroupIcon, 
+      color: 'bg-orange-500' 
+    },
+    { 
+      title: 'Overdue', 
+      value: `$${dashboardData?.summaryCards?.totalOverdue?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`, 
+      icon: CubeIcon, 
+      color: 'bg-red-500' 
+    }
+  ];
+
   // Function to render bar chart
   const renderBarChart = () => {
-    const maxValue = Math.max(...revenueData.map(d => activeChart === 'revenue' ? d.revenue : d.orders));
+    if (!dashboardData?.revenueData?.length) {
+      return <div className="flex items-center justify-center h-full text-gray-500">No revenue data available</div>;
+    }
+
+    const maxValue = Math.max(...dashboardData.revenueData.map(d => 
+      activeChart === 'revenue' ? d.revenue : d.orders
+    ));
     
     return (
       <div className="flex flex-col h-full">
         <div className="flex-grow flex items-end justify-between px-4 gap-0.5">
-          {revenueData.map((data, index) => {
+          {dashboardData.revenueData.map((data, index) => {
             const value = activeChart === 'revenue' ? data.revenue : data.orders;
             const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
             
@@ -88,7 +120,7 @@ const Dashboard = () => {
                     }}
                   >
                     <div className="text-white text-xs font-semibold text-center mt-1">
-                      {activeChart === 'revenue' ? `$${value}` : value}
+                      {activeChart === 'revenue' ? `$${Math.round(value)}` : value}
                     </div>
                   </div>
                 </div>
@@ -103,7 +135,11 @@ const Dashboard = () => {
 
   // Function to render pie chart
   const renderPieChart = () => {
-    const total = salesDistribution.reduce((sum, item) => sum + item.value, 0);
+    if (!dashboardData?.salesDistribution?.length) {
+      return <div className="flex items-center justify-center h-full text-gray-500">No sales distribution data available</div>;
+    }
+
+    const total = dashboardData.salesDistribution.reduce((sum, item) => sum + item.value, 0);
     let startAngle = 0;
     const size = 200;
     const center = size / 2;
@@ -112,7 +148,7 @@ const Dashboard = () => {
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="max-h-[200px]">
-          {salesDistribution.map((item, index) => {
+          {dashboardData.salesDistribution.map((item, index) => {
             const sliceAngle = (item.value / total) * 360;
             const endAngle = startAngle + sliceAngle;
             
@@ -148,7 +184,7 @@ const Dashboard = () => {
         </svg>
         
         <div className="flex flex-wrap justify-center gap-4 mt-4">
-          {salesDistribution.map((item, index) => (
+          {dashboardData.salesDistribution.map((item, index) => (
             <div key={index} className="flex items-center">
               <div 
                 className="w-4 h-4 mr-2 rounded-full" 
@@ -164,15 +200,21 @@ const Dashboard = () => {
     );
   };
 
+  if (loading) return <div className="p-6">Loading dashboard...</div>;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
+
   return (
     <div className="flex flex-col min-h-screen p-6 bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 ">Welcome back, {user?.name || "admin"}!</p>
+          <p className="text-gray-600">Welcome back, {user?.name || "admin"}!</p>
         </div>
-        <button onClick={()=> window.location.reload()} className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50">
+        <button 
+          onClick={fetchDashboardData} 
+          className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50"
+        >
           <ArrowPathIcon className="w-5 h-5 mr-2" />
           Refresh
         </button>
@@ -193,6 +235,23 @@ const Dashboard = () => {
               </div>
               <div className={`p-3 rounded-full ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Sales Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {salesSummary.map((item, index) => (
+          <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <span className={`${item.color} p-3 rounded-full mr-4`}>
+                <item.icon className="h-6 w-6 text-white" />
+              </span>
+              <div>
+                <p className="text-sm font-medium text-gray-600">{item.title}</p>
+                <h3 className="text-xl font-bold">{item.value}</h3>
               </div>
             </div>
           </div>

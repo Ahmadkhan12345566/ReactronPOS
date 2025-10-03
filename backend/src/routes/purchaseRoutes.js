@@ -3,10 +3,10 @@ import { models } from '../models/index.js';
 
 const router = express.Router();
 
-// GET /sales-report - get sales report data
+// GET /purchase-reports - get purchase report data
 router.get('/', async (req, res) => {
   try {
-    const { startDate, endDate, productId, customerId } = req.query;
+    const { startDate, endDate, productId, supplierId } = req.query;
     
     let whereClause = {};
     
@@ -17,16 +17,16 @@ router.get('/', async (req, res) => {
       };
     }
     
-    // Get sales data with related information
-    const sales = await models.Sale.findAll({
+    // Get purchase data with related information
+    const purchases = await models.Purchase.findAll({
       where: whereClause,
       include: [
         {
-          model: models.Customer,
+          model: models.Supplier,
           attributes: ['id', 'name']
         },
         {
-          model: models.OrderItem,
+          model: models.PurchaseItem,
           include: [{
             model: models.Product,
             include: [{
@@ -41,26 +41,26 @@ router.get('/', async (req, res) => {
     });
 
     // Transform data into report format
-    const reportData = sales.flatMap(sale => 
-      sale.OrderItems.map(item => ({
-        id: `${sale.id}-${item.id}`,
-        sku: `SO-${sale.id}-${item.id}`, // Generate a reference-based SKU
-        date: sale.date,
+    const reportData = purchases.flatMap(purchase => 
+      purchase.PurchaseItems.map(item => ({
+        id: `${purchase.id}-${item.id}`,
+        reference: purchase.reference,
+        sku: `PO-${purchase.id}-${item.id}`, // Generate a reference-based SKU
+        dueDate: purchase.date,
         product: {
           name: item.Product?.name || 'Unknown Product',
-          image: item.Product?.image || '',
-          brand: 'No Brand' // Default value since brand might not exist
+          image: item.Product?.image || ''
         },
         category: item.Product?.Category?.name || 'Uncategorized', // Get category from association
-        soldQty: item.quantity,
-        soldAmount: item.total,
+        purchaseQty: item.quantity,
+        purchaseAmount: item.subtotal || (item.unitPrice * item.quantity), // Calculate if subtotal doesn't exist
         stockQty: 0 // Placeholder - you'll need to implement inventory lookup
       }))
     );
 
     res.json(reportData);
   } catch (error) {
-    console.error('GET /sales-report error:', error);
+    console.error('GET /purchase-reports error:', error);
     res.status(500).json({ error: error.message });
   }
 });
