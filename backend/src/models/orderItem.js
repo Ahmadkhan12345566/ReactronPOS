@@ -1,4 +1,3 @@
-// models/orderItem.js
 export default function OrderItemModel(sequelize, DataTypes) {
   const OrderItem = sequelize.define('OrderItem', {
     id: {
@@ -7,6 +6,7 @@ export default function OrderItemModel(sequelize, DataTypes) {
       autoIncrement: true
     },
     product_id: DataTypes.INTEGER,
+    variant_id: DataTypes.INTEGER, 
     quantity: DataTypes.INTEGER,
     unit_price: DataTypes.DECIMAL(10, 2),
     discount: DataTypes.DECIMAL(5, 2),
@@ -19,6 +19,10 @@ export default function OrderItemModel(sequelize, DataTypes) {
   OrderItem.associate = function(models) {
     OrderItem.belongsTo(models.Sale, { foreignKey: 'saleId' });
     OrderItem.belongsTo(models.Product, { foreignKey: 'productId' });
+
+    OrderItem.belongsTo(models.ProductVariant, {
+      foreignKey: 'variantId'
+    });
   };
 
   return OrderItem;

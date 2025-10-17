@@ -1,7 +1,6 @@
-// PayForm.jsx
 import { useState, useEffect } from 'react';
 
-export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
+export default function PayForm({ isOpen, onClose, total, onPaySubmit, warehouses = [] }) {
   const [formData, setFormData] = useState({
     receivedAmount: '',
     payingAmount: total.toFixed(2),
@@ -11,7 +10,8 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
     paymentNote: '',
     saleNote: '',
     staffNote: '',
-    quickCash: '10'
+    quickCash: '10',
+    warehouseId: '' // Add warehouse selection
   });
   
   const [showQuickCash, setShowQuickCash] = useState(true);
@@ -20,34 +20,37 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
   useEffect(() => {
     if (!isOpen) return;
     
+    // Set default warehouse if available
+    const defaultWarehouse = warehouses.length > 0 ? warehouses[0].id : '';
+    
     setFormData(prev => ({
       ...prev,
       payingAmount: total.toFixed(2),
       change: '0.00',
-      receivedAmount: ''
+      receivedAmount: '',
+      warehouseId: defaultWarehouse
     }));
-  }, [isOpen, total]);
+  }, [isOpen, total, warehouses]);
   
   const handleChange = (e) => {
-  const { name, value } = e.target;
+    const { name, value } = e.target;
 
-  setFormData(prev => {
-    // start with the updated field
-    const next = { ...prev, [name]: value };
+    setFormData(prev => {
+      // start with the updated field
+      const next = { ...prev, [name]: value };
 
-    // if they just changed the receivedAmount, recalc change
-    if (name === 'receivedAmount') {
-      const received = parseFloat(value) || 0;
-      const paying  = parseFloat(prev.payingAmount) || 0;
-      const rawDiff = received - paying;
-      next.change     = (rawDiff > 0 ? rawDiff : 0).toFixed(2);
-    }
+      // if they just changed the receivedAmount, recalc change
+      if (name === 'receivedAmount') {
+        const received = parseFloat(value) || 0;
+        const paying  = parseFloat(prev.payingAmount) || 0;
+        const rawDiff = received - paying;
+        next.change     = (rawDiff > 0 ? rawDiff : 0).toFixed(2);
+      }
 
-    return next;
-  });
-};
+      return next;
+    });
+  };
 
-  
   const handlePaymentTypeChange = (e) => {
     const type = e.target.value;
     setFormData(prev => ({ ...prev, paymentType: type }));
@@ -71,11 +74,19 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
   
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate warehouse selection
+    if (!formData.warehouseId) {
+      alert('Please select a warehouse');
+      return;
+    }
+
     onPaySubmit({
       ...formData,
       method: formData.paymentType,
       amountTendered: parseFloat(formData.receivedAmount) || 0,
-      total: total.toFixed(2)
+      total: total.toFixed(2),
+      warehouseId: formData.warehouseId
     });
     onClose();
   };
@@ -101,6 +112,30 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
         </div>
         
         <form onSubmit={handleSubmit} className="p-4 max-h-[85vh] overflow-y-auto">
+          {/* Warehouse Selection - NEW SECTION */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Warehouse <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="warehouseId"
+              value={formData.warehouseId}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-black"
+              required
+            >
+              <option value="">Select Warehouse</option>
+              {warehouses.map(warehouse => (
+                <option key={warehouse.id} value={warehouse.id}>
+                  {warehouse.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Select the warehouse to deduct inventory from
+            </p>
+          </div>
+
           {/* Payment Summary - Highlighted Section */}
           <div className="bg-gray-100 rounded-xl p-4 mb-4 border border-gray-300">
             <div className="grid grid-cols-3 gap-3">

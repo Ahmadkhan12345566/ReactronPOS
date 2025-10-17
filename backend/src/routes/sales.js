@@ -11,7 +11,13 @@ router.get('/', async (req, res) => {
       include: [
         { model: models.Customer, attributes: ['name'] },
         { model: models.User, attributes: ['name'] },
-        { model: models.OrderItem, include: [models.Product] }
+        { 
+          model: models.OrderItem, 
+          include: [
+            models.Product,
+            models.ProductVariant
+          ] 
+        }
       ],
       order: [['createdAt', 'DESC']]
     });
@@ -23,10 +29,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /sales - create sale with order items
 router.post('/', async (req, res) => {
   const transaction = await sequelize.transaction();
-  
+  let committed = false;
+
   try {
     const {
       reference,
@@ -53,42 +59,30 @@ router.post('/', async (req, res) => {
     }
 
     // Validate inventory before creating sale
-    // Update the inventory validation section
     if (Array.isArray(orderItems) && orderItems.length > 0) {
       for (const item of orderItems) {
-        let variant;
-        
-        // If variantId is provided, try to find that specific variant
-        if (item.variantId) {
-          variant = await models.ProductVariant.findByPk(item.variantId, {
-            include: [{
-              model: models.Inventory,
-              required: false  // Remove the warehouse filter
-            }],
-            transaction
-          });
-        } else {
-          // If no variantId, try to find the first variant for the product
-          variant = await models.ProductVariant.findOne({
-            where: { productId: item.productId },
-            include: [{
-              model: models.Inventory,
-              required: false  // Remove the warehouse filter
-            }],
-            transaction
+        if (!item.variantId) {
+          await transaction.rollback();
+          return res.status(400).json({ 
+            error: `Variant ID is required for product ${item.productId}. Each product must have a specific variant selected.` 
           });
         }
+
+        const variant = await models.ProductVariant.findByPk(item.variantId, {
+          include: [{
+            model: models.Inventory,
+            required: false
+          }],
+          transaction
+        });
 
         if (!variant) {
           await transaction.rollback();
           return res.status(400).json({ 
-            error: item.variantId 
-              ? `Variant ${item.variantId} not found` 
-              : `No variants found for product ${item.productId}`
+            error: `Variant ${item.variantId} not found` 
           });
         }
 
-        // Calculate available quantity across all warehouses
         let availableQty = 0;
         if (variant.Inventories && variant.Inventories.length > 0) {
           variant.Inventories.forEach(inventory => {
@@ -99,13 +93,12 @@ router.post('/', async (req, res) => {
         if (availableQty < item.quantity) {
           await transaction.rollback();
           return res.status(400).json({ 
-            error: `Insufficient inventory for product ${item.productId}. Available: ${availableQty}, Requested: ${item.quantity}` 
+            error: `Insufficient inventory for variant ${item.variantId}. Available: ${availableQty}, Requested: ${item.quantity}` 
           });
         }
       }
     }
 
-    // Create sale
     const sale = await models.Sale.create({
       reference,
       date: date || new Date(),
@@ -124,25 +117,22 @@ router.post('/', async (req, res) => {
       userId
     }, { transaction });
 
-    // Create order items and update inventory
     if (Array.isArray(orderItems) && orderItems.length > 0) {
       for (const item of orderItems) {
         await models.OrderItem.create({
           saleId: sale.id,
           productId: item.productId,
-          variantId: item.variantId || null,
+          variantId: item.variantId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           total: item.total
         }, { transaction });
 
-        // Update inventory
         if (item.variantId) {
-          // Update specific variant inventory
           const inventory = await models.Inventory.findOne({
             where: { 
               variantId: item.variantId,
-              warehouseId: 1 // Assuming default warehouse
+              warehouseId: req.body.warehouseId
             },
             transaction
           });
@@ -153,129 +143,152 @@ router.post('/', async (req, res) => {
               transaction
             });
           } else {
-            // Create inventory record if it doesn't exist
             await models.Inventory.create({
               variantId: item.variantId,
-              warehouseId: 1,
-              qty: -item.quantity, // Negative since we're deducting
+              warehouseId: req.body.warehouseId,
+              qty: -item.quantity,
               quantityAlert: 0
             }, { transaction });
-          }
-        } else {
-          // Update the inventory update section
-if (item.variantId) {
-  // Find or create inventory record for this variant (any warehouse)
-  const inventory = await models.Inventory.findOne({
-    where: { 
-      variantId: item.variantId
-    },
-    transaction
-  });
-
-  if (inventory) {
-    await inventory.decrement('qty', { 
-      by: item.quantity,
-      transaction
-    });
-  } else {
-    // Create inventory record if it doesn't exist (use warehouse 1 as default)
-    await models.Inventory.create({
-      variantId: item.variantId,
-      warehouseId: 1, // Default to warehouse 1 if creating new
-      qty: -item.quantity,
-      quantityAlert: 0
-    }, { transaction });
-  }
-} else {
-            // Update product inventory (first variant)
-            const variant = await models.ProductVariant.findOne({
-              where: { productId: item.productId },
-              transaction
-            });
-
-            if (variant) {
-              const inventory = await models.Inventory.findOne({
-                where: { 
-                  variantId: variant.id
-                },
-                transaction
-              });
-
-              if (inventory) {
-                await inventory.decrement('qty', { 
-                  by: item.quantity,
-                  transaction
-                });
-              } else {
-                // Create inventory record if it doesn't exist
-                await models.Inventory.create({
-                  variantId: variant.id,
-                  warehouseId: 1, // Default to warehouse 1
-                  qty: -item.quantity,
-                  quantityAlert: 0
-                }, { transaction });
-              }
-            }
           }
         }
       }
     }
 
     await transaction.commit();
+    committed = true; // ✅ Only commit once
 
-    // Return created sale with order items
     const createdSale = await models.Sale.findByPk(sale.id, {
       include: [
         { model: models.Customer, attributes: ['name'] },
         { model: models.User, attributes: ['name'] },
-        { model: models.OrderItem, include: [models.Product] }
+        { 
+          model: models.OrderItem, 
+          include: [
+            models.Product,
+            models.ProductVariant
+          ] 
+        }
       ]
     });
 
     res.status(201).json(createdSale);
+
   } catch (error) {
-    await transaction.rollback();
-    console.error('POST /sales error:', error);
+    if (!committed) {
+      try {
+        await transaction.rollback();
+      } catch (rollbackError) {
+        console.error('Rollback failed:', rollbackError.message);
+      }
+    }
+
+    console.error('POST /sales error:', error.stack || error);
     res.status(500).json({ error: error.message });
   }
 });
 
+
 // PUT /sales/:id - update sale
 router.put('/:id', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
   try {
     const sale = await models.Sale.findByPk(req.params.id);
-    if (!sale) return res.status(404).json({ error: 'Sale not found' });
+    if (!sale) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Sale not found' });
+    }
 
-    await sale.update(req.body);
+    await sale.update(req.body, { transaction });
 
     // Update order items if provided
     if (Array.isArray(req.body.orderItems)) {
       // First remove existing order items
-      await models.OrderItem.destroy({ where: { saleId: sale.id } });
+      await models.OrderItem.destroy({ 
+        where: { saleId: sale.id },
+        transaction
+      });
 
-      // Then create new ones
+      // Then create new ones with inventory validation
       for (const item of req.body.orderItems) {
+        if (!item.variantId) {
+          await transaction.rollback();
+          return res.status(400).json({ 
+            error: 'Variant ID is required for all order items' 
+          });
+        }
+
+        // Validate inventory for the new items
+        const variant = await models.ProductVariant.findByPk(item.variantId, {
+          include: [models.Inventory],
+          transaction
+        });
+
+        if (!variant) {
+          await transaction.rollback();
+          return res.status(400).json({ error: `Variant ${item.variantId} not found` });
+        }
+
+        let availableQty = 0;
+        if (variant.Inventories && variant.Inventories.length > 0) {
+          variant.Inventories.forEach(inv => {
+            availableQty += parseInt(inv.qty || 0);
+          });
+        }
+
+        if (availableQty < item.quantity) {
+          await transaction.rollback();
+          return res.status(400).json({ 
+            error: `Insufficient inventory for variant ${item.variantId}` 
+          });
+        }
+
+        // Create order item
         await models.OrderItem.create({
           saleId: sale.id,
           productId: item.productId,
-          variantId: item.variantId || null,
+          variantId: item.variantId,
           quantity: item.quantity || 0,
           unitPrice: item.unitPrice || 0,
           total: item.total || 0
+        }, { transaction });
+
+        // Update inventory
+        const inventories = await models.Inventory.findAll({
+          where: { variantId: item.variantId },
+          order: [['qty', 'DESC']],
+          transaction
         });
+
+        let remainingQty = item.quantity;
+        for (const inventory of inventories) {
+          if (remainingQty <= 0) break;
+          const deductQty = Math.min(remainingQty, inventory.qty);
+          await inventory.decrement('qty', { by: deductQty, transaction });
+          remainingQty -= deductQty;
+        }
       }
     }
+
+    await transaction.commit();
 
     const updatedSale = await models.Sale.findByPk(sale.id, {
       include: [
         { model: models.Customer, attributes: ['name'] },
         { model: models.User, attributes: ['name'] },
-        { model: models.OrderItem, include: [models.Product] }
+        { 
+          model: models.OrderItem, 
+          include: [
+            models.Product,
+            models.ProductVariant
+          ] 
+        }
       ]
     });
 
     res.json(updatedSale);
   } catch (error) {
+    await transaction.rollback();
     console.error('PUT /sales/:id error:', error);
     res.status(500).json({ error: error.message });
   }
@@ -283,16 +296,61 @@ router.put('/:id', async (req, res) => {
 
 // DELETE /sales/:id
 router.delete('/:id', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
   try {
     const sale = await models.Sale.findByPk(req.params.id);
-    if (!sale) return res.status(404).json({ error: 'Sale not found' });
+    if (!sale) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Sale not found' });
+    }
 
-    // Delete associated order items first
-    await models.OrderItem.destroy({ where: { saleId: sale.id } });
+    // Get order items before deletion to restore inventory
+    const orderItems = await models.OrderItem.findAll({
+      where: { saleId: sale.id },
+      transaction
+    });
 
-    await sale.destroy();
+    // Restore inventory for each order item
+    for (const item of orderItems) {
+      if (item.variantId) {
+        const inventory = await models.Inventory.findOne({
+          where: { 
+            variantId: item.variantId,
+            warehouseId: 1 // Default warehouse for restoration
+          },
+          transaction
+        });
+
+        if (inventory) {
+          await inventory.increment('qty', { 
+            by: item.quantity,
+            transaction
+          });
+        } else {
+          // Create inventory record if it doesn't exist
+          await models.Inventory.create({
+            variantId: item.variantId,
+            warehouseId: 1,
+            qty: item.quantity,
+            quantityAlert: 0
+          }, { transaction });
+        }
+      }
+    }
+
+    // Delete associated order items
+    await models.OrderItem.destroy({ 
+      where: { saleId: sale.id },
+      transaction
+    });
+
+    await sale.destroy({ transaction });
+    await transaction.commit();
+    
     res.status(204).send();
   } catch (error) {
+    await transaction.rollback();
     res.status(500).json({ error: error.message });
   }
 });

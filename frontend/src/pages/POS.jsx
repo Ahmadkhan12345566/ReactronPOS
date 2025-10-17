@@ -10,6 +10,7 @@ export default function POS() {
   const { currentUser } = usePos();
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [warehouses, setWarehouses] = useState([]); // Add warehouses state
   const [selectedCustomer, setSelectedCustomer] = useState('walk-in');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -26,10 +27,11 @@ export default function POS() {
   const tax = subtotal * 0.08;
   const total = subtotal + tax - discount;
 
-  // Fetch products and customers on component mount
+  // Fetch products, customers, and warehouses on component mount
   useEffect(() => {
     fetchProducts();
     fetchCustomers();
+    fetchWarehouses();
   }, []);
 
   const fetchProducts = async () => {
@@ -56,75 +58,87 @@ export default function POS() {
     }
   };
 
+  const fetchWarehouses = async () => {
+    try {
+      const data = await api.get('/api/warehouses');
+      setWarehouses(data);
+    } catch (err) {
+      console.error('Failed to fetch warehouses:', err);
+      setError('Failed to load warehouses');
+    }
+  };
+
   const filteredProducts = products
     .filter(product => activeCategory === 'all' || product.category === activeCategory)
     .filter(product => product.name.toLowerCase().includes(searchTerm.toLowerCase()));
-function addQuantity(item) {
-  const product = products.find(p => p.id === item.id);
-  if (product) {
-    addToOrder(product);
-  }
-}
-// Update the addToOrder function
-function addToOrder(product) {
-  // Check if product has variants
-  if (!product.ProductVariants || product.ProductVariants.length === 0) {
-    setError(`No variants available for ${product.name}. Please add a variant in the product management.`);
-    return;
+
+  function addQuantity(item) {
+    const product = products.find(p => p.id === item.id);
+    if (product) {
+      addToOrder(product);
+    }
   }
 
-  // Use the first variant for now
-  const variant = product.ProductVariants[0];
-  
-  // Check inventory for this variant
-  let availableQty = 0;
-  if (variant.Inventories) {
-    variant.Inventories.forEach(inv => {
-      availableQty += parseInt(inv.qty || 0);
+  // Update the addToOrder function
+  function addToOrder(product) {
+    // Check if product has variants
+    if (!product.ProductVariants || product.ProductVariants.length === 0) {
+      setError(`No variants available for ${product.name}. Please add a variant in the product management.`);
+      return;
+    }
+
+    // Use the first variant for now
+    const variant = product.ProductVariants[0];
+    
+    // Check inventory for this variant
+    let availableQty = 0;
+    if (variant.Inventories) {
+      variant.Inventories.forEach(inv => {
+        availableQty += parseInt(inv.qty || 0);
+      });
+    }
+
+    if (availableQty <= 0) {
+      setError(`Insufficient stock for ${product.name}`);
+      return;
+    }
+
+    setOrderItems(prev => {
+      const exist = prev.find((item) => item.id === product.id && item.variantId === variant.id);
+      if (exist) {
+        if (exist.quantity + 1 > availableQty) {
+          setError(`Only ${availableQty} units available for ${product.name}`);
+          return prev;
+        }
+        return prev.map((item) => 
+          item.id === product.id && item.variantId === variant.id 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
+        );
+      } else {
+        if (1 > availableQty) {
+          setError(`Only ${availableQty} units available for ${product.name}`);
+          return prev;
+        }
+        return [...prev, { 
+          ...product, 
+          variantId: variant.id,
+          quantity: 1,
+          unitPrice: variant.price,
+          price: variant.price // Keep for UI compatibility
+        }];
+      }
     });
   }
 
-  if (availableQty <= 0) {
-    setError(`Insufficient stock for ${product.name}`);
-    return;
+  // Update the removeQuantity function
+  function removeQuantity(item) {
+    setOrderItems(orderItems.map((newItem) => 
+      newItem.id === item.id ? { ...newItem, quantity: newItem.quantity - 1 } : newItem
+    ).filter(newItem => newItem.quantity !== 0));
   }
 
-  setOrderItems(prev => {
-    const exist = prev.find((item) => item.id === product.id && item.variantId === variant.id);
-    if (exist) {
-      if (exist.quantity + 1 > availableQty) {
-        setError(`Only ${availableQty} units available for ${product.name}`);
-        return prev;
-      }
-      return prev.map((item) => 
-        item.id === product.id && item.variantId === variant.id 
-          ? { ...item, quantity: item.quantity + 1 } 
-          : item
-      );
-    } else {
-      if (1 > availableQty) {
-        setError(`Only ${availableQty} units available for ${product.name}`);
-        return prev;
-      }
-      return [...prev, { 
-        ...product, 
-        variantId: variant.id,
-        quantity: 1,
-        unitPrice: variant.price,
-        price: variant.price // Keep for UI compatibility
-      }];
-    }
-  });
-}
-
-
-// Update the removeQuantity function
-function removeQuantity(item) {
-  setOrderItems(orderItems.map((newItem) => 
-    newItem.id === item.id ? { ...newItem, quantity: newItem.quantity - 1 } : newItem
-  ).filter(newItem => newItem.quantity !== 0));
-}
-function clearAll() {
+  function clearAll() {
     setSelectedCustomer('walk-in');
     setSearchTerm('');
     setActiveCategory('all');
@@ -132,77 +146,86 @@ function clearAll() {
     setError(null);
   }
 
-  // Update the processOrder function
-// Update the processOrder function to include the paid amount
-const processOrder = async (paymentData) => {
-  try {
-    // Get the actual customer ID (not the string 'walk-in')
-    const customerId = selectedCustomer === 'walk-in' 
-      ? customers.find(c => c.name === 'Walk-in Customer')?.id 
-      : selectedCustomer;
-
-    if (!customerId) {
-      throw new Error('No valid customer selected');
-    }
-
-    // Prepare order data matching Sale model structure
-    const orderData = {
-      reference: `POS-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      status: 'Completed',
-      payment_status: 'Paid',
-      payment_method: paymentData.method,
-      subtotal: subtotal,
-      discount: discount,
-      tax: tax,
-      shipping: 0,
-      total: total,
-      paid: paymentData.amountTendered, // This should be the amount from the payment modal
-      due: 0,
-      note: '',
-      customerId: customerId,
-      userId: currentUser?.id,
-      orderItems: orderItems.map(item => ({
-        productId: item.id,
-        variantId: item.variantId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.unitPrice * item.quantity
-      }))
-    };
-
-    const result = await api.post('/api/sales', orderData);
-    
-    // Update local product quantities
-    const updatedProducts = products.map(product => {
-      const orderedItems = orderItems.filter(item => item.id === product.id);
-      if (orderedItems.length > 0) {
-        // Create a deep copy to avoid direct state mutation
-        const updatedProduct = JSON.parse(JSON.stringify(product));
-        updatedProduct.ProductVariants = updatedProduct.ProductVariants.map(variant => {
-          const orderedVariant = orderedItems.find(item => item.variantId === variant.id);
-          if (orderedVariant) {
-            // Update inventory for the variant
-            if (variant.Inventories && variant.Inventories.length > 0) {
-              variant.Inventories[0].qty -= orderedVariant.quantity;
-            }
-          }
-          return variant;
-        });
-        return updatedProduct;
+  // Update the processOrder function to include warehouse
+  const processOrder = async (paymentData) => {
+    try {
+      // Validate warehouse selection
+      if (!paymentData.warehouseId) {
+        throw new Error('Warehouse selection is required');
       }
-      return product;
-    });
-    
-    setProducts(updatedProducts);
-    setShowReceipt(true);
-    return result;
-  } catch (err) {
-    setError(err.message || 'Failed to process order');
-    throw err;
-  }
-};
 
+      // Get the actual customer ID (not the string 'walk-in')
+      const customerId = selectedCustomer === 'walk-in' 
+        ? customers.find(c => c.name === 'Walk-in Customer')?.id 
+        : selectedCustomer;
+
+      if (!customerId) {
+        throw new Error('No valid customer selected');
+      }
+
+      // Prepare order data matching Sale model structure
+      const orderData = {
+        reference: `POS-${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        status: 'Completed',
+        payment_status: 'Paid',
+        payment_method: paymentData.method,
+        subtotal: subtotal,
+        discount: discount,
+        tax: tax,
+        shipping: 0,
+        total: total,
+        paid: paymentData.amountTendered,
+        due: 0,
+        note: paymentData.saleNote || '',
+        customerId: customerId,
+        userId: currentUser?.id,
+        warehouseId: parseInt(paymentData.warehouseId), // Add warehouse ID
+        orderItems: orderItems.map(item => ({
+          productId: item.id,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.unitPrice * item.quantity
+        }))
+      };
+
+      const result = await api.post('/api/sales', orderData);
+      
+      // Update local product quantities for the selected warehouse
+      const updatedProducts = products.map(product => {
+        const orderedItems = orderItems.filter(item => item.id === product.id);
+        if (orderedItems.length > 0) {
+          // Create a deep copy to avoid direct state mutation
+          const updatedProduct = JSON.parse(JSON.stringify(product));
+          updatedProduct.ProductVariants = updatedProduct.ProductVariants.map(variant => {
+            const orderedVariant = orderedItems.find(item => item.variantId === variant.id);
+            if (orderedVariant) {
+              // Update inventory for the variant in the selected warehouse
+              if (variant.Inventories && variant.Inventories.length > 0) {
+                const warehouseInventory = variant.Inventories.find(inv => 
+                  inv.warehouseId === parseInt(paymentData.warehouseId)
+                );
+                if (warehouseInventory) {
+                  warehouseInventory.qty -= orderedVariant.quantity;
+                }
+              }
+            }
+            return variant;
+          });
+          return updatedProduct;
+        }
+        return product;
+      });
+      
+      setProducts(updatedProducts);
+      setShowReceipt(true);
+      return result;
+    } catch (err) {
+      setError(err.message || 'Failed to process order');
+      throw err;
+    }
+  };
 
   if (loading) return <div className="p-6">Loading products...</div>;
 
@@ -282,8 +305,6 @@ const processOrder = async (paymentData) => {
                 )}
               </div>
 
-
-
               {/* Order Items */}
               <div className="mb-2 flex-1 overflow-y-auto">
                 {/* Header Row */}
@@ -327,7 +348,6 @@ const processOrder = async (paymentData) => {
                         </button>
                       </div>
 
-
                       {/* Subtotal */}
                       <div className="text-gray-700 font-semibold">
                         ${(item.price * item.quantity)}
@@ -352,13 +372,8 @@ const processOrder = async (paymentData) => {
                 </div>
               </div>
 
-
               {/* Order Summary */}
               <div className="px-4 py-2 rounded-xl bg-white border border-gray-400">
-                {/* <div className="flex justify-between mb-2">
-                  <span className="text-gray-700">Subtotal</span>
-                  <span className="font-semibold">${subtotal}</span>
-                </div> */}
                 <div className="flex justify-between mb-1">
                   <span className="text-gray-700">Discount</span>
                   <span className="text-gray-700 font-semibold">-${discount}</span>
@@ -381,12 +396,21 @@ const processOrder = async (paymentData) => {
                   Clear
                 </button>
                 <button
-                  onClick={() => setShowPayForm(true)}
+                  onClick={() => {
+                    if (warehouses.length === 0) {
+                      setError('No warehouses available. Please add warehouses first.');
+                      return;
+                    }
+                    if (orderItems.length === 0) {
+                      setError('Please add items to the order first.');
+                      return;
+                    }
+                    setShowPayForm(true);
+                  }}
                   className="btn w-full mt-4 bg-black text-white border-0 shadow rounded-xl py-3"
                 >
                   Pay
                 </button>
-
               </div>
             </div>
           </div>
@@ -447,9 +471,6 @@ const processOrder = async (paymentData) => {
                           <h3 className="font-bold text-gray-900 truncate">
                             {product.name}
                           </h3>
-                          {/* <div className="text-xs text-gray-600">
-                            150g • <span className="text-gray-600">Popular</span>
-                          </div> */}
                         </div>
                       <div className="flex justify-between items-center mt-1">
                         <div className="text-gray-900 font-semibold text-sm">
@@ -497,6 +518,7 @@ const processOrder = async (paymentData) => {
           onClose={() => setShowPayForm(false)}
           total={total}
           onPaySubmit={processOrder}
+          warehouses={warehouses} // Pass warehouses to PayForm
         />
       )}
 
