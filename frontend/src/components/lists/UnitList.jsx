@@ -7,6 +7,7 @@ import {
   statusColumn,
   actionsColumn
 } from '../ListComponents/columnHelpers';
+import { api } from '../../services/api';
 
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
@@ -72,6 +73,21 @@ export default function UnitList({ units = [], setShowForm }) {
   });
 }, [filteredData]);
 
+  const handleDelete = async (unit) => {
+    try {
+      await api.delete(`/api/units/${unit.id}`);
+      // You might want to refresh the list of units here
+    } catch (error) {
+      console.error('Error deleting unit:', error);
+    }
+  };
+
+  const handleEdit = async (unit) => {
+    // For now, just log the edited unit.
+    // You might want to refresh the list of units here
+    console.log('Edited unit:', unit);
+  };
+
   // Use UI hook
   const {
     table,
@@ -116,6 +132,8 @@ export default function UnitList({ units = [], setShowForm }) {
         table={table} 
         emptyState={emptyState}
         maxHeight="max-h-[calc(100vh-26rem)]"
+        handleDelete={handleDelete}
+        handleEdit={handleEdit}
       />
       
       <ListPagination 

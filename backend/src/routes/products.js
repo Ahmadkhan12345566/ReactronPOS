@@ -1,6 +1,6 @@
 // routes/products.js
 import express from 'express';
-import { models } from '../models/index.js';
+import { models, sequelize } from '../models/index.js';
 
 const router = express.Router();
 
@@ -44,6 +44,7 @@ router.get('/', async (req, res) => {
         unit: product.Unit ? product.Unit.name : '',
         qty: totalQty,
         image: product.image || null,
+        ProductVariants: variants,
         createdBy: product.User ? product.User.name : 'Unknown'
       };
     });
@@ -55,115 +56,113 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /products - create product, optional variants array
-// Expected body: product fields + optional "variants": [{ sku, itemBarcode, price, cost, weight, attributes, expiryDate, manufacturedDate, inventories: [{warehouseId, qty, quantityAlert}] }, ...]
+// POST /products - create a new product, its variants, and inventory
 router.post('/', async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
-    const { 
-      name, description, status, slug, sellingType, productType, taxType, tax,
-      discountType, discountValue, warranties, barcodeSymbology, image,
-      categoryId, subCategoryId, brandId, unitId, supplierId, createdBy,
-      // For single default variant:
-      price, cost, weight,
-      variants // optional array
+    const {
+      name, description, categoryId, subCategoryId, brandId, unitId,
+      productType, taxType, tax, createdBy, discountType, discountValue,
+      warranties, barcodeSymbology, sellingType, image, supplierId, slug,
+      // Single product fields
+      sku, itemBarcode, price, quantity, quantityAlert, warehouseId
     } = req.body;
-    console.log("price: "+ price);
 
-    if (!name) return res.status(400).json({ error: 'name is required' });
+    // --- FIX FOR OPTIONAL FIELDS (Priority 5) ---
+    // Helper function to convert empty strings to null for numeric/optional fields
+    const toNull = (val) => (val === '' || val === undefined ? null : val);
 
-    // Basic image validation (optional): ensure it starts with data:image/ if present
-    if (image && typeof image === 'string' && !image.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Invalid base64 image string' });
-    }
-
-    // Create product (image stored as base64 text if provided)
+    // Create the product
     const product = await models.Product.create({
       name,
-      description,
-      status: status || 'Active',
-      slug,
-      sellingType,
+      description: toNull(description),
+      categoryId: toNull(categoryId),
+      subCategoryId: toNull(subCategoryId),
+      brandId: toNull(brandId),
+      unitId: toNull(unitId),
       productType,
-      taxType,
-      tax,
-      discountType,
-      discountValue,
-      warranties,
-      barcodeSymbology,
-      image: image || null,
-      categoryId,
-      subCategoryId,
-      brandId,
-      unitId,
-      supplierId,
-      createdBy
-    });
+      taxType: toNull(taxType),
+      tax: toNull(tax),
+      createdBy: toNull(createdBy),
+      discountType: toNull(discountType),
+      discountValue: toNull(discountValue),
+      warranties: toNull(warranties),
+      barcodeSymbology: toNull(barcodeSymbology),
+      sellingType: toNull(sellingType),
+      image: toNull(image),
+      supplierId: toNull(supplierId),
+      slug: toNull(slug),
+    }, { transaction });
 
-    // Helper - create variant + inventories
-    if (Array.isArray(variants) && variants.length) {
+    // --- FIX FOR SINGLE PRODUCT (Priority 4) ---
+    if (productType === 'single') {
+      // Handle as a single product with one variant
+      if (!sku || !price || !quantity || !warehouseId) {
+        throw new Error('Missing required fields for single product: sku, price, quantity, warehouseId');
+      }
+
+      // 1. Create the ProductVariant
+      const variant = await models.ProductVariant.create({
+        productId: product.id,
+        sku: sku,
+        itemBarcode: toNull(itemBarcode),
+        price: parseFloat(price),
+        cost: 0,
+        weight: 0,
+        attributes: {},
+        expiryDate: toNull(req.body.expiryDate),
+        manufacturedDate: toNull(req.body.manufacturedDate),
+      }, { transaction });
+
+      // 2. Create the Inventory entry
+      await models.Inventory.create({
+        variantId: variant.id,
+        warehouseId: parseInt(warehouseId),
+        qty: parseInt(quantity),
+        quantityAlert: toNull(quantityAlert) || 0,
+      }, { transaction });
+
+    } else if (productType === 'variable') {
+      // Handle as a variable product (existing logic)
+      const { variants } = req.body;
+      if (!variants || !Array.isArray(variants) || variants.length === 0) {
+        throw new Error('Variable product must have at least one variant.');
+      }
+
       for (const v of variants) {
+        // 1. Create the ProductVariant
         const variant = await models.ProductVariant.create({
           productId: product.id,
-          sku: v.sku || null,
-          itemBarcode: v.itemBarcode || null,
-          price: v.price || null,
-          cost: v.cost ?? 0.00,
-          weight: v.weight ?? 0.00,
-          attributes: v.attributes ?? null,
-          expiryDate: v.expiryDate ?? null,
-          manufacturedDate: v.manufacturedDate ?? null
-        });
+          sku: v.sku,
+          itemBarcode: toNull(v.itemBarcode),
+          price: parseFloat(v.price) || 0,
+          cost: toNull(v.cost) || 0,
+          weight: toNull(v.weight) || 0,
+          attributes: v.attributes || {},
+          expiryDate: toNull(v.expiryDate),
+          manufacturedDate: toNull(v.manufacturedDate),
+        }, { transaction });
 
-        if (Array.isArray(v.inventories)) {
+        // 2. Create Inventory entries
+        if (v.inventories && Array.isArray(v.inventories)) {
           for (const inv of v.inventories) {
-            if (!inv.warehouseId) continue;
             await models.Inventory.create({
               variantId: variant.id,
-              warehouseId: inv.warehouseId,
-              qty: inv.qty ?? 0,
-              quantityAlert: inv.quantityAlert ?? 0
-            });
-          }
-        }
-      }
-    } else {
-      // No variants provided: if single-type product, create a default variant using product-level price/cost/weight if available
-      if (productType === 'single') {
-        const defaultVariant = await models.ProductVariant.create({
-          productId: product.id,
-          sku: `DEF-${product.id}`,
-          itemBarcode: null,
-          price: price ?? 0.00,
-          cost: cost ?? 0.00,
-          weight: weight ?? 0.00,
-          attributes: null,
-          expiryDate: null,
-          manufacturedDate: null
-        });
-
-        // If product-level inventories are provided on body as inventories, create them:
-        if (Array.isArray(req.body.inventories)) {
-          for (const inv of req.body.inventories) {
-            if (!inv.warehouseId) continue;
-            await models.Inventory.create({
-              variantId: defaultVariant.id,
-              warehouseId: inv.warehouseId,
-              qty: inv.qty ?? 0,
-              quantityAlert: inv.quantityAlert ?? 0
-            });
+              warehouseId: parseInt(inv.warehouseId),
+              qty: parseInt(inv.qty) || 0,
+              quantityAlert: toNull(inv.quantityAlert) || 0,
+            }, { transaction });
           }
         }
       }
     }
+    // --- END OF FIX ---
 
-    // Return created product with its variants
-    const created = await models.Product.findByPk(product.id, {
-      include: [{ model: models.ProductVariant, include: [models.Inventory] }]
-    });
-
-    res.status(201).json(created);
+    await transaction.commit();
+    res.status(201).json(product);
   } catch (error) {
-    console.error('POST /products error:', error);
+    await transaction.rollback();
+    console.error('POST /api/products error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -264,18 +263,15 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Simple stub for CSV import (keep it simple / use multer+csv-parser in future)
-router.post('/import', async (req, res) => {
-  // leave as a TODO or implement a server-side CSV parser that builds
-  // the same payload shape as POST /products (product + variants)
-  res.status(501).json({ message: 'CSV import not implemented in this minimal route' });
-});
 
-// Add this route to products.js
-// GET /products/pos - get products with variants and inventory for POS
-// Update the /pos endpoint to return the correct structure
+
 router.get('/pos', async (req, res) => {
   try {
+    const { warehouseId } = req.query;
+
+    // Define the inventory where clause based on the presence of a warehouseId
+    const inventoryWhereClause = warehouseId ? { warehouseId: parseInt(warehouseId) } : {};
+
     const products = await models.Product.findAll({
       where: { status: 'Active' },
       include: [
@@ -286,7 +282,8 @@ router.get('/pos', async (req, res) => {
           model: models.ProductVariant,
           include: [{
             model: models.Inventory,
-            required: false  // Remove the where clause to include all warehouses
+            where: inventoryWhereClause,
+            required: !!warehouseId // Make inventory required if filtering by warehouse
           }]
         }
       ]
@@ -295,7 +292,7 @@ router.get('/pos', async (req, res) => {
     const transformedProducts = products.map(product => {
       const variants = product.ProductVariants || [];
       
-      // Calculate total quantity across all variants and warehouses
+      // Calculate total quantity based on the (potentially filtered) inventories
       let totalQty = 0;
       variants.forEach(variant => {
         if (variant.Inventories && variant.Inventories.length > 0) {
@@ -315,7 +312,7 @@ router.get('/pos', async (req, res) => {
         brand: product.Brand ? product.Brand.name : '',
         price: price,
         unit: product.Unit ? product.Unit.name : '',
-        qty: totalQty, // This is the total available quantity across all warehouses
+        qty: totalQty, // This now reflects qty for the selected warehouse if provided
         image: product.image || null,
         createdBy: product.User ? product.User.name : 'Unknown',
         ProductVariants: variants.map(variant => ({

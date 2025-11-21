@@ -17,7 +17,11 @@ export default function SaleModel(sequelize, DataTypes) {
     total: DataTypes.DECIMAL(10, 2),
     paid: DataTypes.DECIMAL(10, 2),
     due: DataTypes.DECIMAL(10, 2),
-    note: DataTypes.TEXT
+    note: DataTypes.TEXT,
+    warehouseId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
   }, {
     tableName: 'sales',
     timestamps: true
@@ -26,6 +30,7 @@ export default function SaleModel(sequelize, DataTypes) {
   Sale.associate = function(models) {
     Sale.belongsTo(models.Customer, { foreignKey: 'customerId' });
     Sale.belongsTo(models.User, { foreignKey: 'userId' });
+    Sale.belongsTo(models.Warehouse, { foreignKey: 'warehouseId' });
     Sale.hasMany(models.OrderItem, { foreignKey: 'saleId' });
   };
 

@@ -1,25 +1,32 @@
+// frontend/src/pages/SignIn.jsx
+
 import React, { useState } from 'react';
 import { api } from '../services/api';
+import { usePos } from '../context/PosContext'; // <-- Import usePos
+import { useNavigate } from 'react-router-dom'; // <-- Import useNavigate
 
-const defaultOnSignIn = (response) => {
-  console.log("User signed in");
-  localStorage.setItem('user', JSON.stringify(response.user || {}));
-  document.location.replace('/'); // Redirect to home page after sign in
-}
-
-export default function SignIn({ onSignIn = defaultOnSignIn }) {
+export default function SignIn() {
+  const { login } = usePos(); // <-- Get login function from context
+  const navigate = useNavigate(); // <-- Get navigate function
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null); // <-- Add error state
+
+  const defaultOnSignIn = (response) => {
+    login(response); // <-- Use context login function
+    navigate('/'); // <-- Use navigate instead of document.location
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null); // <-- Clear previous errors
     try {
       const response = await api.post('/api/auth/login', credentials);
-      console.log('Login successful:', response);
-      onSignIn(response);
+      defaultOnSignIn(response);
     } catch (error) {
       console.error('Login failed:', error);
+      setError(error.message || 'Login failed. Please check your credentials.'); // <-- Set error
     } finally {
       setIsLoading(false);
     }

@@ -1,5 +1,7 @@
-// NewCustomerForm.jsx
+// frontend/src/components/CustomerForm.jsx
+
 import { useState } from 'react';
+import { api } from '../services/api'; // <-- IMPORT THE API
 
 export default function CustomerForm({ isOpen, onClose, onAddCustomer }) {
   const [newCustomer, setNewCustomer] = useState({
@@ -12,6 +14,7 @@ export default function CustomerForm({ isOpen, onClose, onAddCustomer }) {
   });
   
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(null); // <-- Add API error state
 
   if (!isOpen) return null;
 
@@ -32,7 +35,8 @@ export default function CustomerForm({ isOpen, onClose, onAddCustomer }) {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  // --- MODIFIED SUBMIT HANDLER ---
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const formErrors = validateForm();
     
@@ -41,146 +45,77 @@ export default function CustomerForm({ isOpen, onClose, onAddCustomer }) {
       return;
     }
     
-    // Generate ID and call parent handler
-    const id = `cust-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
-    onAddCustomer({ id, ...newCustomer });
-    
-    // Reset form and close
-    setNewCustomer({
-      name: '',
-      phone: '',
-      email: '',
-      address: '',
-      city: '',
-      country: ''
-    });
-    onClose();
+    setApiError(null); // Clear previous API errors
+
+    try {
+      // 1. Call the API to save the customer
+      const savedCustomer = await api.post('/api/customers', newCustomer);
+      
+      // 2. Pass the REAL, saved customer back to the POS page
+      onAddCustomer(savedCustomer);
+      
+      // 3. Close and reset the form
+      onClose();
+      setNewCustomer({ name: '', phone: '', email: '', address: '', city: '', country: '' });
+
+    } catch (error) {
+      console.error("Failed to create customer:", error);
+      setApiError(error.message || "An unknown error occurred.");
+    }
   };
+  // --- END OF MODIFICATIONS ---
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Semi-transparent overlay */}
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
       <div 
-        className="absolute inset-0 bg-black opacity-25"
+        className="fixed inset-0"
         onClick={onClose}
-      ></div>
-      
-      {/* Form container */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Create</h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ×
-          </button>
-        </div>
-        
-        {/* Form */}
+      />
+      <div className="relative bg-white rounded-xl shadow-xl border border-gray-800 w-full max-w-lg mx-auto">
         <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-4">
-            {/* Customer Name */}
+          <h2 className="text-xl font-semibold mb-6">Add New Customer</h2>
+          
+          {apiError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 text-center">
+              {apiError}
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Name Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Customer Name *
+                Customer Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 name="name"
                 value={newCustomer.name}
                 onChange={handleChange}
-                className={`w-full border rounded-lg px-3 py-2 ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter customer name"
+                className={`w-full border rounded-lg px-3 py-2 ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="Enter full name"
               />
-              {errors.name && (
-                <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
             
-            {/* Phone */}
+            {/* Phone Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone *
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={newCustomer.phone}
-                onChange={handleChange}
-                className={`w-full border rounded-lg px-3 py-2 ${
-                  errors.phone ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter phone number"
-              />
-              {errors.phone && (
-                <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
-              )}
-            </div>
-            
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={newCustomer.email}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                placeholder="Enter email address"
-              />
-            </div>
-            
-            {/* Address */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address
+                Phone <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="address"
-                value={newCustomer.address}
+                name="phone"
+                value={newCustomer.phone}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                placeholder="Enter street address"
+                className={`w-full border rounded-lg px-3 py-2 ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="Enter phone number"
               />
+              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
             
-            {/* City & Country */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={newCustomer.city}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  placeholder="Enter city"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Country
-                </label>
-                <input
-                  type="text"
-                  name="country"
-                  value={newCustomer.country}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  placeholder="Enter country"
-                />
-              </div>
-            </div>
+            {/* ... (rest of the inputs: email, address, city, country) ... */}
+            
           </div>
           
           {/* Buttons */}

@@ -77,7 +77,7 @@ export default function CustomerReportList({ reports }) {
       {
         accessorKey: 'amount',
         header: 'Amount',
-        cell: ({ getValue }) => <span>${getValue()}</span>,
+        cell: ({ getValue }) => <span>PKR {getValue()}</span>,
         size: 100,
       },
       {
@@ -230,7 +230,7 @@ export default function CustomerReportList({ reports }) {
         <div className="bg-gray-100 rounded-b-xl p-4 border-t border-gray-300">
           <div className="flex justify-between items-center">
             <span className="font-semibold">Total</span>
-            <span className="font-bold">${totalAmount.toFixed(2)}</span>
+            <span className="font-bold">PKR {totalAmount.toFixed(2)}</span>
           </div>
         </div>
       )}

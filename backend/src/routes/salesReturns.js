@@ -55,27 +55,42 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /sales-returns - create a new sales return
+// POST /sales-returns - create a new sales return and update inventory
 router.post('/', async (req, res) => {
   const transaction = await sequelize.transaction();
-  
   try {
-    const { date, status, total, paid, due, paymentStatus, customerId, saleId, returnItems } = req.body;
+    const { 
+      customerId, 
+      saleId, 
+      date, 
+      status, 
+      total, 
+      paid, 
+      due, 
+      payment_status, 
+      returnItems,
+      warehouseId // <-- GET THE WAREHOUSE ID FROM THE REQUEST
+    } = req.body;
 
-    // Create sales return
+    if (!warehouseId) {
+      throw new Error('Warehouse ID is required for a sales return.');
+    }
+
+    // Create the SaleReturn entry
     const salesReturn = await models.SaleReturn.create({
+      customerId,
+      saleId,
       date: date || new Date(),
       status: status || 'Pending',
-      total: total || 0,
-      paid: paid || 0,
-      due: due || 0,
-      payment_status: paymentStatus || 'Unpaid',
-      customerId,
-      saleId
+      total,
+      paid,
+      due,
+      payment_status: payment_status || 'Unpaid',
+      warehouseId // <-- SAVE IT
     }, { transaction });
 
-    // Create return items
-    if (Array.isArray(returnItems) && returnItems.length > 0) {
+    // Process each returned item
+    if (returnItems && returnItems.length > 0) {
       for (const item of returnItems) {
         await models.ReturnItem.create({
           returnId: salesReturn.id,
@@ -88,9 +103,12 @@ router.post('/', async (req, res) => {
 
         // Update inventory (add back returned items)
         if (item.variantId) {
-          await updateVariantInventory(item.variantId, item.quantity, transaction);
+          // Pass warehouseId to the helper
+          await updateVariantInventory(item.variantId, item.quantity, warehouseId, transaction);
         } else {
-          await updateProductInventory(item.productId, item.quantity, transaction);
+          // (This else block for non-variant products is likely flawed, but let's fix the warehouse bug)
+          // Pass warehouseId to the helper
+          await updateProductInventory(item.productId, item.quantity, warehouseId, transaction);
         }
       }
     }
@@ -105,32 +123,40 @@ router.post('/', async (req, res) => {
 });
 
 // Helper functions for inventory updates
-async function updateVariantInventory(variantId, quantity, transaction) {
+async function updateVariantInventory(variantId, quantity, warehouseId, transaction) {
   const inventory = await models.Inventory.findOne({
-    where: { variantId },
+    where: { 
+      variantId: variantId,
+      warehouseId: warehouseId // <-- USE THE PASSED WAREHOUSE ID
+    },
     transaction
   });
 
   if (inventory) {
     await inventory.increment('qty', { by: quantity, transaction });
   } else {
+    // Create new inventory record in the correct warehouse
     await models.Inventory.create({
       variantId,
-      warehouseId: 1,
+      warehouseId: warehouseId, // <-- USE THE PASSED WAREHOUSE ID
       qty: quantity,
       quantityAlert: 0
     }, { transaction });
   }
 }
 
-async function updateProductInventory(productId, quantity, transaction) {
+async function updateProductInventory(productId, quantity, warehouseId, transaction) {
+  // Find the first variant for this product (this logic is risky, but consistent with the file)
   const variant = await models.ProductVariant.findOne({
     where: { productId },
     transaction
   });
 
   if (variant) {
-    await updateVariantInventory(variant.id, quantity, transaction);
+    // Call the other helper with the correct warehouseId
+    await updateVariantInventory(variant.id, quantity, warehouseId, transaction);
+  } else {
+    console.warn(`SalesReturn: Could not find a variant for product ${productId} to restore inventory.`);
   }
 }
 

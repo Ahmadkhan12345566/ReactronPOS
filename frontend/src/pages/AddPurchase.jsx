@@ -3,6 +3,7 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
+import SupplierModal from '../components/forms/SupplierModal';
 import { api } from '../services/api';
 import {
   ArrowPathIcon,
@@ -16,6 +17,7 @@ const AddPurchase = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [purchaseItems, setPurchaseItems] = useState([]);
   const [accordion, setAccordion] = useState({
     purchaseInfo: true,
@@ -29,20 +31,24 @@ const AddPurchase = () => {
   }, []);
 
   const fetchOptions = async () => {
-    try {
-      const [suppliersResponse, productsResponse, warehousesResponse] = await Promise.all([
-        api.get('/api/suppliers'),
-        api.get('/api/products'),
-        api.get('/api/warehouses')
-      ]);
-      setSuppliers(suppliersResponse);
-      setProducts(productsResponse);
-      setWarehouses(warehousesResponse);
-    } catch (error) {
-      console.error('Error fetching options:', error);
-    }
+  try {
+    const [suppliersResponse, productsResponse, warehousesResponse] = await Promise.all([
+      api.get('/api/suppliers'),
+      api.get('/api/products'), 
+      api.get('/api/warehouses')
+    ]);
+    console.log(productsResponse);
+    setSuppliers(suppliersResponse);
+    setProducts(productsResponse);
+    setWarehouses(warehousesResponse);
+  } catch (error) {
+    console.error('Error fetching options:', error);
+  }
+};
+  const handleSupplierCreated = (newSupplier) => {
+    setSuppliers(prevSuppliers => [...prevSuppliers, newSupplier]);
+    setShowSupplierModal(false);
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -223,9 +229,20 @@ const AddPurchase = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Supplier <span className="text-red-500">*</span>
-                </label>
+                {/* <-- 4. ADD "ADD NEW" BUTTON --> */}
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Supplier <span className="text-red-500">*</span>
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowSupplierModal(true)}
+                    className="flex items-center text-black text-sm"
+                  >
+                    <PlusCircleIcon className="w-4 h-4 mr-1" />
+                    Add New
+                  </button>
+                </div>
                 <select 
                   name="supplierId" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -349,6 +366,7 @@ const AddPurchase = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {purchaseItems.map((item, index) => {
                       const variants = getProductVariants(item.productId);
+                      console.log('Available variants:', variants); // Debug log
                       
                       return (
                         <tr key={index}>
@@ -361,7 +379,9 @@ const AddPurchase = () => {
                             >
                               <option value="">Select Product</option>
                               {products.map(product => (
-                                <option key={product.id} value={product.id}>{product.name}</option>
+                                <option key={product.id} value={product.id}>
+                                  {product.name}
+                                </option>
                               ))}
                             </select>
                           </td>
@@ -372,6 +392,7 @@ const AddPurchase = () => {
                               value={item.variantId}
                               onChange={(e) => updatePurchaseItem(index, 'variantId', e.target.value)}
                               required
+                              disabled={!item.productId || variants.length === 0}
                             >
                               <option value="">Select Variant</option>
                               {variants.map(variant => (
@@ -380,6 +401,9 @@ const AddPurchase = () => {
                                 </option>
                               ))}
                             </select>
+                            {variants.length === 0 && item.productId && (
+                              <p className="text-xs text-red-500 mt-1">No variants available for this product</p>
+                            )}
                           </td>
                           
                           <td className="px-4 py-3">
@@ -458,6 +482,11 @@ const AddPurchase = () => {
           submitLabel="Add Purchase" 
         />
       </form>
+      <SupplierModal 
+        showModal={showSupplierModal}
+        setShowModal={setShowSupplierModal}
+        onSupplierCreated={handleSupplierCreated}
+      />
     </div>
   );
 };

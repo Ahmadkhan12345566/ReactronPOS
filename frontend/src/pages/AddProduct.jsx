@@ -3,8 +3,10 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
-import WarehouseModal from '../components/forms/WarehouseModal';
 import SubcategoryModal from '../components/forms/SubcategoryModal';
+import SupplierModal from '../components/forms/SupplierModal'; 
+import WarehouseModal from '../components/forms/WarehouseModal';
+import { usePos } from '../context/PosContext';
 import { api } from '../services/api';
 import {
   ArrowLeftIcon,
@@ -26,7 +28,8 @@ const AddProduct = () => {
   const [units, setUnits] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
+  const { currentUser } = usePos();
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [accordion, setAccordion] = useState({
     productInfo: true,
     pricingStocks: false,
@@ -71,6 +74,19 @@ const AddProduct = () => {
     const randomNumber = Math.floor(Math.random() * 1000000); // Generates random number between 0-999999
     return `SK${randomNumber}`;
   };
+  const handleSupplierCreated = (newSupplier) => {
+    setSuppliers(prevSuppliers => [...prevSuppliers, newSupplier]);
+    setShowSupplierModal(false);
+  };
+  
+  const handleSubcategoryCreated = (newSubcategory) => {
+    setSubCategories(prevSubCategories => [...prevSubCategories, newSubcategory]);
+    setShowSubcategoryModal(false);
+  };
+  const handleWarehouseCreated = (newWarehouse) => {
+    setWarehouses(prevWarehouses => [...prevWarehouses, newWarehouse]);
+    setShowWarehouseModal(false);
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -83,8 +99,8 @@ const AddProduct = () => {
         data.image = selectedImages[0];
       }
       
-      if (!user.id) throw new Error('User ID not found in localStorage');
-      data.createdBy = user.id;
+      if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
+      data.createdBy = currentUser.id;
       
       // Build variants array based on product type
       let variants = [];
@@ -151,12 +167,20 @@ const AddProduct = () => {
         supplierId: data.supplierId,
         slug: data.slug
       };
+      if (data.productType === 'single') {
+        productData.sku = data.sku;
+        productData.price = data.price;
+        productData.quantity = data.quantity;
+        productData.warehouseId = data.warehouseId;
+        productData.itemBarcode = data.itemBarcode;
+        productData.quantityAlert = data.quantityAlert;
+      }
       
       await api.post('/api/products', productData);
       navigate('/products');
     } catch (error) {
       console.error('Error creating product:', error);
-      // Add user-friendly error handling here
+      // Add currentUser-friendly error handling here
     }
 };
 
@@ -249,9 +273,19 @@ const AddProduct = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Supplier
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Supplier
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowSupplierModal(true)}
+                    className="flex items-center text-black text-sm"
+                  >
+                    <PlusCircleIcon className="w-4 h-4 mr-1" />
+                    Add New
+                  </button>
+                </div>
                 <select 
                   name="supplierId" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -298,7 +332,6 @@ const AddProduct = () => {
                     type="text" 
                     className="w-full px-3 py-2 border border-gray-600 rounded-l-lg focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter SKU"
-                    required
                   />
                   <button type="button" className="px-4 py-2 bg-black text-white rounded-r-lg hover:bg-blue-700"
                   onClick={(e) => {
@@ -356,7 +389,6 @@ const AddProduct = () => {
                 <select 
                   name="subCategoryId" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  required
                 >
                   <option value="">Select</option>
                   {subCategories.map(subCat => (
@@ -369,7 +401,7 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Brand <span className="text-red-500">*</span>
                 </label>
-                <select name="brandId" className="w-full px-3 py-2 border border-gray-600 rounded-lg" required>
+                <select name="brandId" className="w-full px-3 py-2 border border-gray-600 rounded-lg">
                   <option value="">Select</option>
                   {brands.map(brand => (
                     <option key={brand.id} value={brand.id}>{brand.name}</option>
@@ -381,7 +413,7 @@ const AddProduct = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Unit <span className="text-red-500">*</span>
                 </label>
-                <select name="unitId" className="w-full px-3 py-2 border border-gray-600 rounded-lg" required>
+                <select name="unitId" className="w-full px-3 py-2 border border-gray-600 rounded-lg">
                   <option value="">Select</option>
                   {units.map(unit => (
                     <option key={unit.id} value={unit.id}>{unit.name}</option>
@@ -843,13 +875,18 @@ const AddProduct = () => {
       <WarehouseModal 
         showModal={showWarehouseModal}
         setShowModal={setShowWarehouseModal}
-        onWarehouseCreated={()=> window.location.replace("/#/products/add")}
+        onWarehouseCreated={handleWarehouseCreated}
       />
 
       <SubcategoryModal 
         showModal={showSubcategoryModal}
         setShowModal={setShowSubcategoryModal}
-        onSubcategoryCreated={()=> window.location.replace("/#/products/add")}
+        onSubcategoryCreated={handleSubcategoryCreated}
+      />
+      <SupplierModal 
+        showModal={showSupplierModal}
+        setShowModal={setShowSupplierModal}
+        onSupplierCreated={handleSupplierCreated}
       />
     </div>
   );

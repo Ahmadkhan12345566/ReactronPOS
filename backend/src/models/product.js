@@ -1,3 +1,5 @@
+// backend/src/models/product.js
+
 export default function ProductModel(sequelize, DataTypes) {
   const Product = sequelize.define('Product', {
     id: {
@@ -9,33 +11,70 @@ export default function ProductModel(sequelize, DataTypes) {
       type: DataTypes.STRING,
       allowNull: false
     },
-    description: DataTypes.TEXT,
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true // <-- ADD THIS
+    },
     status: {
       type: DataTypes.ENUM('Active', 'Inactive'),
       defaultValue: 'Active'
     },
-    image: DataTypes.TEXT('long'),
-    slug: DataTypes.STRING,
-    sellingType: DataTypes.ENUM('Online', 'POS'),
-    productType: DataTypes.ENUM('single', 'variable'),
-    taxType: DataTypes.ENUM('Exclusive', 'Inclusive'),
-    tax: DataTypes.DECIMAL(5, 2),
-    discountType: DataTypes.ENUM('Percentage', 'Fixed'),
-    discountValue: DataTypes.DECIMAL(10, 2),
-    warranties: DataTypes.TEXT,
-    barcodeSymbology: DataTypes.STRING
+    image: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true // <-- ADD THIS
+    },
+    slug: {
+      type: DataTypes.STRING,
+      allowNull: true // <-- ADD THIS
+    },
+    sellingType: {
+      type: DataTypes.ENUM('Online', 'POS'),
+      allowNull: true // <-- ADD THIS
+    },
+    productType: {
+      type: DataTypes.ENUM('single', 'variable'),
+      allowNull: false // This should be required
+    },
+    taxType: {
+      type: DataTypes.ENUM('Exclusive', 'Inclusive'),
+      allowNull: true // <-- ADD THIS
+    },
+    tax: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true, // <-- ADD THIS
+      defaultValue: null // <-- ADD THIS
+    },
+    discountType: {
+      type: DataTypes.ENUM('Percentage', 'Fixed'),
+      allowNull: true // <-- ADD THIS
+    },
+    discountValue: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true, // <-- ADD THIS
+      defaultValue: null // <-- ADD THIS
+    },
+    warranties: {
+      type: DataTypes.TEXT,
+      allowNull: true // <-- ADD THIS
+    },
+    barcodeSymbology: {
+      type: DataTypes.STRING,
+      allowNull: true // <-- ADD THIS
+    }
   }, {
     tableName: 'products',
     timestamps: true
   });
 
   Product.associate = function(models) {
-    Product.belongsTo(models.User, { foreignKey: 'createdBy' });
-    Product.belongsTo(models.Category, { foreignKey: 'categoryId' });
-    Product.belongsTo(models.SubCategory, { foreignKey: 'subCategoryId' });
-    Product.belongsTo(models.Brand, { foreignKey: 'brandId' });
-    Product.belongsTo(models.Unit, { foreignKey: 'unitId' });
-    Product.belongsTo(models.Supplier, { foreignKey: 'supplierId' });
+    // These foreign keys must also allow null
+    Product.belongsTo(models.User, { foreignKey: { name: 'createdBy', allowNull: true } });
+    Product.belongsTo(models.Category, { foreignKey: { name: 'categoryId', allowNull: true } });
+    Product.belongsTo(models.SubCategory, { foreignKey: { name: 'subCategoryId', allowNull: true } });
+    Product.belongsTo(models.Brand, { foreignKey: { name: 'brandId', allowNull: true } });
+    Product.belongsTo(models.Unit, { foreignKey: { name: 'unitId', allowNull: true } });
+    Product.belongsTo(models.Supplier, { foreignKey: { name: 'supplierId', allowNull: true } });
+    
     Product.hasMany(models.ProductVariant, { foreignKey: 'productId' });
   };
 

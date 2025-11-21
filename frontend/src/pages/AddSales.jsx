@@ -3,6 +3,7 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
+import { usePos } from '../context/PosContext';
 import { api } from '../services/api';
 import {
   ArrowPathIcon,
@@ -17,7 +18,7 @@ const AddSales = () => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [orderItems, setOrderItems] = useState([]);
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
+  const { currentUser } = usePos();
   const [accordion, setAccordion] = useState({
     saleInfo: true,
     orderItems: false,
@@ -55,7 +56,7 @@ const handleSubmit = async (e) => {
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
     
-    if (!user.id) throw new Error('User ID not found in localStorage');
+    if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
     
     // Prepare order items
     const items = [];
@@ -99,7 +100,7 @@ const handleSubmit = async (e) => {
       due: due,
       note: data.note || '',
       customerId: data.customerId,
-      userId: user.id,
+      userId: currentUser.id,
       orderItems: items
     };
     

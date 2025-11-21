@@ -11,37 +11,78 @@ export default function POS() {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [warehouses, setWarehouses] = useState([]); // Add warehouses state
-  const [selectedCustomer, setSelectedCustomer] = useState('walk-in');
+  const [selectedWarehouse, setSelectedWarehouse] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [orderItems, setOrderItems] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [showPayForm, setShowPayForm] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const discount = 5.00;
+  const [discount, setDiscount] = useState(0.00); 
   const tax = subtotal * 0.08;
   const total = subtotal + tax - discount;
 
-  // Fetch products, customers, and warehouses on component mount
+  // Fetch initial data
   useEffect(() => {
-    fetchProducts();
-    fetchCustomers();
-    fetchWarehouses();
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        const fetchedCustomers = await fetchCustomers();
+        
+        if (fetchedCustomers) {
+          const walkInCustomer = fetchedCustomers.find(c => c.name === 'Walk-in Customer');
+          if (walkInCustomer) {
+            setSelectedCustomer(walkInCustomer.id);
+          } else if (fetchedCustomers.length > 0) {
+            // Fallback to the first customer if walk-in not found
+            setSelectedCustomer(fetchedCustomers[0].id);
+          } else {
+            setError('No customers found. Please add a customer.');
+          }
+        }
+
+        await fetchCategories();
+        const fetchedWarehouses = await fetchWarehouses();
+        if (fetchedWarehouses && fetchedWarehouses.length > 0) {
+          const initialWarehouseId = fetchedWarehouses[0].id;
+          setSelectedWarehouse(initialWarehouseId);
+          await fetchProducts(initialWarehouseId);
+        } else {
+          setError('No warehouses found. Please add a warehouse.');
+        }
+      } catch (err) {
+        setError('Failed to load initial data.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
   }, []);
 
-  const fetchProducts = async () => {
+  // Re-fetch products when warehouse changes
+  useEffect(() => {
+    if (selectedWarehouse) {
+      fetchProducts(selectedWarehouse);
+    }
+  }, [selectedWarehouse]);
+
+
+  const fetchProducts = async (warehouseId) => {
+    if (!warehouseId) return;
     try {
       setLoading(true);
-      const data = await api.get('/api/products/pos');
+      const data = await api.get(`/api/products/pos?warehouseId=${warehouseId}`);
       setProducts(data);
-      console.log(data);
     } catch (err) {
-      setError('Failed to fetch products');
+      setError('Failed to fetch products for the selected warehouse');
       console.error(err);
     } finally {
       setLoading(false);
@@ -51,10 +92,11 @@ export default function POS() {
   const fetchCustomers = async () => {
     try {
       const data = await api.get('/api/customers');
-      // Add walk-in customer option
-      setCustomers([{ id: 'walk-in', name: 'Walk-in Customer' }, ...data]);
+      setCustomers(data);
+      return data; // Return data for chaining
     } catch (err) {
       console.error('Failed to fetch customers:', err);
+      return null; // Return null on error
     }
   };
 
@@ -62,9 +104,20 @@ export default function POS() {
     try {
       const data = await api.get('/api/warehouses');
       setWarehouses(data);
+      return data; // Return data for chaining
     } catch (err) {
       console.error('Failed to fetch warehouses:', err);
       setError('Failed to load warehouses');
+      return null; // Return null on error
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await api.get('/api/categories');
+      setCategories(data);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
     }
   };
 
@@ -90,13 +143,8 @@ export default function POS() {
     // Use the first variant for now
     const variant = product.ProductVariants[0];
     
-    // Check inventory for this variant
-    let availableQty = 0;
-    if (variant.Inventories) {
-      variant.Inventories.forEach(inv => {
-        availableQty += parseInt(inv.qty || 0);
-      });
-    }
+    // The backend now sends the correct qty for the selected warehouse
+    const availableQty = variant.Inventories[0]?.qty || 0;
 
     if (availableQty <= 0) {
       setError(`Insufficient stock for ${product.name}`);
@@ -139,25 +187,27 @@ export default function POS() {
   }
 
   function clearAll() {
-    setSelectedCustomer('walk-in');
+    const walkInCustomer = customers.find(c => c.name === 'Walk-in Customer');
+    if (walkInCustomer) {
+      setSelectedCustomer(walkInCustomer.id);
+    }
     setSearchTerm('');
     setActiveCategory('all');
     setOrderItems([]);
     setError(null);
+    setDiscount(0.00);
   }
 
   // Update the processOrder function to include warehouse
   const processOrder = async (paymentData) => {
     try {
       // Validate warehouse selection
-      if (!paymentData.warehouseId) {
+      if (!selectedWarehouse) {
         throw new Error('Warehouse selection is required');
       }
 
       // Get the actual customer ID (not the string 'walk-in')
-      const customerId = selectedCustomer === 'walk-in' 
-        ? customers.find(c => c.name === 'Walk-in Customer')?.id 
-        : selectedCustomer;
+      const customerId = selectedCustomer;
 
       if (!customerId) {
         throw new Error('No valid customer selected');
@@ -180,7 +230,7 @@ export default function POS() {
         note: paymentData.saleNote || '',
         customerId: customerId,
         userId: currentUser?.id,
-        warehouseId: parseInt(paymentData.warehouseId), // Add warehouse ID
+        warehouseId: parseInt(selectedWarehouse), // Use selectedWarehouse from state
         orderItems: orderItems.map(item => ({
           productId: item.id,
           variantId: item.variantId,
@@ -192,33 +242,9 @@ export default function POS() {
 
       const result = await api.post('/api/sales', orderData);
       
-      // Update local product quantities for the selected warehouse
-      const updatedProducts = products.map(product => {
-        const orderedItems = orderItems.filter(item => item.id === product.id);
-        if (orderedItems.length > 0) {
-          // Create a deep copy to avoid direct state mutation
-          const updatedProduct = JSON.parse(JSON.stringify(product));
-          updatedProduct.ProductVariants = updatedProduct.ProductVariants.map(variant => {
-            const orderedVariant = orderedItems.find(item => item.variantId === variant.id);
-            if (orderedVariant) {
-              // Update inventory for the variant in the selected warehouse
-              if (variant.Inventories && variant.Inventories.length > 0) {
-                const warehouseInventory = variant.Inventories.find(inv => 
-                  inv.warehouseId === parseInt(paymentData.warehouseId)
-                );
-                if (warehouseInventory) {
-                  warehouseInventory.qty -= orderedVariant.quantity;
-                }
-              }
-            }
-            return variant;
-          });
-          return updatedProduct;
-        }
-        return product;
-      });
-      
-      setProducts(updatedProducts);
+      // Re-fetch products to get updated quantities
+      await fetchProducts(selectedWarehouse);
+
       setShowReceipt(true);
       return result;
     } catch (err) {
@@ -244,6 +270,29 @@ export default function POS() {
         {/* Order Section - Left Side */}
         <div className="w-full lg:w-[27.5%] h-full bg-white rounded-2xl border border-gray-800 shadow-lg flex flex-col">
             <div className="p-6 flex flex-col flex-1 overflow-hidden min-h-0">
+              {/* Warehouse Selection */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h2 className="font-semibold text-gray-700">Warehouse</h2>
+                </div>
+                <select
+                  className="select select-bordered w-full bg-white rounded-xl p-2 border border-gray-400"
+                  value={selectedWarehouse}
+                  onChange={(e) => setSelectedWarehouse(e.target.value)}
+                  disabled={warehouses.length === 0}
+                >
+                  {warehouses.length > 0 ? (
+                    warehouses.map((warehouse) => (
+                      <option key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No warehouses available</option>
+                  )}
+                </select>
+              </div>
+
               {/* Customer Selection */}
               <div className="mb-6">
                 <div className="flex items-center justify-between gap-2 mb-3">
@@ -329,7 +378,7 @@ export default function POS() {
                       </div>
 
                       {/* Price */}
-                      <div className="text-gray-700 font-semibold">${item.price}</div>
+                      <div className="text-gray-700 font-semibold">PKR {item.price}</div>
 
                       {/* quantity Controls */}
                       <div className="flex items-center justify-center gap-2">
@@ -350,7 +399,7 @@ export default function POS() {
 
                       {/* Subtotal */}
                       <div className="text-gray-700 font-semibold">
-                        ${(item.price * item.quantity)}
+                        PKR {(item.price * item.quantity)}
                       </div>
 
                       {/* Delete Icon */}
@@ -374,18 +423,26 @@ export default function POS() {
 
               {/* Order Summary */}
               <div className="px-4 py-2 rounded-xl bg-white border border-gray-400">
-                <div className="flex justify-between mb-1">
+                <div className="flex justify-between items-center mb-1">
                   <span className="text-gray-700">Discount</span>
-                  <span className="text-gray-700 font-semibold">-${discount}</span>
+                  <input
+                    type="number"
+                    className="w-24 text-right font-semibold text-gray-700 border border-gray-300 rounded-md px-2 py-0.5"
+                    value={discount.toFixed(2)}
+                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()} // Select all text on click
+                    step="0.01"
+                    min="0"
+                  />
                 </div>
                 <div className="flex justify-between mb-1">
                   <span className="text-gray-700">Tax (8%)</span>
-                  <span className="font-semibold">${tax}</span>
+                  <span className="font-semibold">PKR {tax.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-gray-400 pt-1 flex justify-between">
                   <span className="font-bold text-lg text-gray-900">Total</span>
                   <span className="font-bold text-lg text-gray-900">
-                    ${total}
+                    PKR {total.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -397,10 +454,6 @@ export default function POS() {
                 </button>
                 <button
                   onClick={() => {
-                    if (warehouses.length === 0) {
-                      setError('No warehouses available. Please add warehouses first.');
-                      return;
-                    }
                     if (orderItems.length === 0) {
                       setError('Please add items to the order first.');
                       return;
@@ -426,24 +479,15 @@ export default function POS() {
                 >
                   All items
                 </button>
-                <button
-                  className={`btn btn-sm rounded-xl px-4 py-2 ${activeCategory === 'food' ? 'bg-black text-white' : 'bg-gray-300 text-gray-900'}`}
-                  onClick={() => setActiveCategory('food')}
-                >
-                  Food
-                </button>
-                <button
-                  className={`btn btn-sm rounded-xl px-4 py-2 ${activeCategory === 'cold' ? 'bg-black text-white' : 'bg-gray-300 text-gray-900'}`}
-                  onClick={() => setActiveCategory('cold')}
-                >
-                  Cold Drinks
-                </button>
-                <button
-                  className={`btn btn-sm rounded-xl px-4 py-2 ${activeCategory === 'hot' ? 'bg-black text-white' : 'bg-gray-300 text-gray-900'}`}
-                  onClick={() => setActiveCategory('hot')}
-                >
-                  Hot Drinks
-                </button>
+                {categories.map(category => (
+                  <button
+                    key={category.id}
+                    className={`btn btn-sm rounded-xl px-4 py-2 ${activeCategory === category.name ? 'bg-black text-white' : 'bg-gray-300 text-gray-900'}`}
+                    onClick={() => setActiveCategory(category.name)}
+                  >
+                    {category.name}
+                  </button>
+                ))}
               </div>
 
               {/* Products Grid */}
@@ -474,12 +518,11 @@ export default function POS() {
                         </div>
                       <div className="flex justify-between items-center mt-1">
                         <div className="text-gray-900 font-semibold text-sm">
-                          ${product.price}
+                          PKR {product.price}
                         </div>
                         <div className="flex space-x-1">
                           <span className="bg-gray-300 text-gray-900 text-[11px] px-2 py-0.5 rounded-full">
-                            {product.category === 'food' ? '🍔 Food' :
-                              product.category === 'cold' ? '🧊 Cold' : '☕ Hot'}
+                            {product.category}
                           </span>
                         </div>
                         
@@ -518,7 +561,6 @@ export default function POS() {
           onClose={() => setShowPayForm(false)}
           total={total}
           onPaySubmit={processOrder}
-          warehouses={warehouses} // Pass warehouses to PayForm
         />
       )}
 

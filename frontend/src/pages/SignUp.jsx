@@ -1,27 +1,41 @@
+// frontend/src/pages/SignUp.jsx
+
 import React, { useState } from 'react';
 import { api } from '../services/api';
+import { usePos } from '../context/PosContext'; // <-- Import usePos
+import { useNavigate } from 'react-router-dom'; // <-- Import useNavigate
 
-const defaultOnSignUp = (response) => {
-  console.log("User signed up");
-  localStorage.setItem('user', JSON.stringify(response.user || {}));
-  document.location.replace('/'); // Redirect to home page after sign up
-}
-
-export default function SignUp({ onSignup = defaultOnSignUp }) {
+export default function SignUp() {
+  const { login } = usePos(); // <-- Get login function from context
+  const navigate = useNavigate(); // <-- Get navigate function
   const [userData, setUserData] = useState({
     name: '', email: '', password: '', role: 'biller'
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null); // <-- Add error state
+
+  const defaultOnSignUp = (response) => {
+    // Log in the new user immediately
+    login({ user: response.user, token: response.token }); // <-- Use context login
+    navigate('/'); // <-- Use navigate
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null); // <-- Clear previous errors
     try {
+      // Note: The signup endpoint needs to also return a token
+      // If it doesn't, you'll need to call /api/auth/login right after this
       const response = await api.post('/api/auth/signup', userData);
-      console.log('Signup successful:', response);
-      onSignup(response);
+      
+      // Assuming signup returns { user, token } just like login
+      // If not, you must adjust this logic
+      defaultOnSignUp(response); 
+      
     } catch (error) {
       console.error('Signup failed:', error);
+      setError(error.message || 'Signup failed. Please try again.'); // <-- Set error
     } finally {
       setIsLoading(false);
     }

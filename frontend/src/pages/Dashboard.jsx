@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+// frontend/src/pages/Dashboard.jsx
+
+import React, { useState, useEffect } from 'react';
+import { api } from '../services/api'; // <-- IMPORT API
 import {
   ArrowPathIcon,
   CurrencyDollarIcon,
@@ -6,203 +9,231 @@ import {
   UserGroupIcon,
   CubeIcon,
 } from '@heroicons/react/24/outline';
+import { Bar, Pie } from 'react-chartjs-2'; // You may need to: npm install chart.js react-chartjs-2
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
 
-// Dummy data for dashboard cards
-const stats = [
-  {
-    title: "Total Revenue",
-    value: "$45,231.89",
-    change: "+20.1% from last month",
-    icon: CurrencyDollarIcon,
-    color: "bg-green-100 text-green-600"
-  },
-  {
-    title: "Total Orders",
-    value: "1,235",
-    change: "+12.3% from last month",
-    icon: ShoppingBagIcon,
-    color: "bg-blue-100 text-blue-600"
-  },
-  {
-    title: "Total Customers",
-    value: "1,582",
-    change: "+18.4% from last month",
-    icon: UserGroupIcon,
-    color: "bg-purple-100 text-purple-600"
-  },
-  {
-    title: "Total Products",
-    value: "324",
-    change: "+5.2% from last month",
-    icon: CubeIcon,
-    color: "bg-amber-100 text-amber-600"
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+
+// Helper to format currency
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'PKR',
+  }).format(value || 0);
+};
+
+// --- REMOVED ALL DUMMY DATA ---
+
+export default function Dashboard() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeChart, setActiveChart] = useState('revenue'); // 'revenue' or 'orders'
+
+  // Fetch data from the API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const dashboardData = await api.get('/api/dashboard');
+        setData(dashboardData);
+      } catch (err) {
+        setError(err.message || 'Failed to fetch dashboard data');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // --- REBUILT STATS AND CHARTS FROM API DATA ---
+
+  // Create stats cards from API data
+  const statsCards = data ? [
+    {
+      title: "Total Revenue",
+      value: formatCurrency(data.stats.totalRevenue),
+      icon: CurrencyDollarIcon,
+      color: "bg-green-100 text-green-600"
+    },
+    {
+      title: "Total Orders",
+      value: data.stats.totalOrders.toLocaleString(),
+      icon: ShoppingBagIcon,
+      color: "bg-blue-100 text-blue-600"
+    },
+    {
+      title: "Total Customers",
+      value: data.stats.totalCustomers.toLocaleString(),
+      icon: UserGroupIcon,
+      color: "bg-purple-100 text-purple-600"
+    },
+    {
+      title: "Total Products",
+      value: data.stats.totalProducts.toLocaleString(),
+      icon: CubeIcon,
+      color: "bg-amber-100 text-amber-600"
+    }
+  ] : [];
+
+  // Create summary cards from API data
+  const summaryCards = data ? [
+    { title: 'Total Amount', value: formatCurrency(data.summaryCards.totalAmount) },
+    { title: 'Total Paid', value: formatCurrency(data.summaryCards.totalPaid) },
+    { title: 'Total Unpaid', value: formatCurrency(data.summaryCards.totalUnpaid) },
+    { title: 'Total Overdue', value: formatCurrency(data.summaryCards.totalOverdue) }
+  ] : [];
+
+  // Bar Chart Data
+  const barChartData = {
+    labels: data?.revenueData.map(d => d.month) || [],
+    datasets: [
+      {
+        label: activeChart === 'revenue' ? 'Revenue' : 'Orders',
+        data: data?.revenueData.map(d => d[activeChart]) || [],
+        backgroundColor: 'rgba(29, 78, 216, 0.8)',
+        borderRadius: 4,
+      },
+    ],
+  };
+
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += activeChart === 'revenue' ? formatCurrency(context.parsed.y) : context.parsed.y;
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => activeChart === 'revenue' ? formatCurrency(value) : value
+        }
+      },
+    },
+  };
+
+  // Pie Chart Data
+  const pieChartData = {
+    labels: data?.salesDistribution.map(d => d.category) || [],
+    datasets: [
+      {
+        data: data?.salesDistribution.map(d => d.value) || [],
+        backgroundColor: data?.salesDistribution.map(d => d.color) || [],
+        borderColor: '#fff',
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            let label = context.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed !== null) {
+              label += formatCurrency(context.parsed);
+            }
+            return label;
+          }
+        }
+      }
+    },
+  };
+
+  // --- RENDER LOGIC ---
+
+  if (loading) {
+    return <div className="p-6">Loading Dashboard...</div>;
   }
-];
 
-// Revenue data for bar chart
-const revenueData = [
-  { month: 'Jan', revenue: 4000, orders: 120 },
-  { month: 'Feb', revenue: 3000, orders: 98 },
-  { month: 'Mar', revenue: 5000, orders: 150 },
-  { month: 'Apr', revenue: 2780, orders: 110 },
-  { month: 'May', revenue: 1890, orders: 85 },
-  { month: 'Jun', revenue: 2390, orders: 105 },
-  { month: 'Jul', revenue: 3490, orders: 130 },
-  { month: 'Aug', revenue: 4200, orders: 145 },
-  { month: 'Sep', revenue: 3800, orders: 125 },
-  { month: 'Oct', revenue: 4500, orders: 160 },
-  { month: 'Nov', revenue: 5200, orders: 180 },
-  { month: 'Dec', revenue: 6100, orders: 200 },
-];
-
-// Sales distribution data for pie chart
-const salesDistribution = [
-  { category: 'Food', value: 45, color: '#4F46E5' },
-  { category: 'Cold Drinks', value: 25, color: '#10B981' },
-  { category: 'Hot Drinks', value: 30, color: '#F59E0B' },
-];
-
-const Dashboard = () => {
-  // Chart data
-  const [activeChart, setActiveChart] = useState('revenue');
-  const [user] = useState(JSON.parse(localStorage.getItem('user')));
-  // Function to render bar chart
-  const renderBarChart = () => {
-    const maxValue = Math.max(...revenueData.map(d => activeChart === 'revenue' ? d.revenue : d.orders));
-    
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex-grow flex items-end justify-between px-4 gap-0.5">
-          {revenueData.map((data, index) => {
-            const value = activeChart === 'revenue' ? data.revenue : data.orders;
-            const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
-            
-            return (
-              <div key={index} className="flex flex-col items-center h-full flex-1">
-                <div className="flex flex-col items-center justify-end h-full w-full max-w-[32px] md:max-w-[32px]">
-                  <div 
-                    className={`w-full rounded-t-md ${activeChart === 'revenue' ? 'bg-blue-500' : 'bg-green-500'}`}
-                    style={{ 
-                      height: `${height}%`,
-                      minHeight: '2px'
-                    }}
-                  >
-                    <div className="text-white text-xs font-semibold text-center mt-1">
-                      {activeChart === 'revenue' ? `$${value}` : value}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">{data.month}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // Function to render pie chart
-  const renderPieChart = () => {
-    const total = salesDistribution.reduce((sum, item) => sum + item.value, 0);
-    let startAngle = 0;
-    const size = 200;
-    const center = size / 2;
-    const radius = center - 10;
-    
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="max-h-[200px]">
-          {salesDistribution.map((item, index) => {
-            const sliceAngle = (item.value / total) * 360;
-            const endAngle = startAngle + sliceAngle;
-            
-            const startAngleRad = (startAngle * Math.PI) / 180;
-            const endAngleRad = (endAngle * Math.PI) / 180;
-            
-            const x1 = center + radius * Math.cos(startAngleRad);
-            const y1 = center + radius * Math.sin(startAngleRad);
-            const x2 = center + radius * Math.cos(endAngleRad);
-            const y2 = center + radius * Math.sin(endAngleRad);
-            
-            const largeArcFlag = sliceAngle > 180 ? 1 : 0;
-            
-            const pathData = [
-              `M ${center} ${center}`,
-              `L ${x1} ${y1}`,
-              `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-              'Z'
-            ].join(' ');
-            
-            startAngle = endAngle;
-            
-            return (
-              <path
-                key={index}
-                d={pathData}
-                fill={item.color}
-                stroke="white"
-                strokeWidth="1"
-              />
-            );
-          })}
-        </svg>
-        
-        <div className="flex flex-wrap justify-center gap-4 mt-4">
-          {salesDistribution.map((item, index) => (
-            <div key={index} className="flex items-center">
-              <div 
-                className="w-4 h-4 mr-2 rounded-full" 
-                style={{ backgroundColor: item.color }}
-              ></div>
-              <span className="text-sm">
-                {item.category} ({((item.value / total) * 100).toFixed(0)}%)
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  if (error) {
+    return <div className="p-6 text-red-500">Error: {error}</div>;
+  }
 
   return (
-    <div className="flex flex-col min-h-screen p-6 bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 ">Welcome back, {user?.name || "admin"}!</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500">Welcome back, {data?.currentUser || 'Admin'}</p>
         </div>
-        <button onClick={()=> window.location.reload()} className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50">
-          <ArrowPathIcon className="w-5 h-5 mr-2" />
-          Refresh
+        <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-full">
+          <ArrowPathIcon className="w-6 h-6" />
         </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        {stats.map((stat, index) => (
-          <div 
-            key={index}
-            className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <h3 className="text-2xl font-bold mt-1 text-gray-900">{stat.value}</h3>
-                <p className="text-sm text-green-600 mt-1">{stat.change}</p>
-              </div>
-              <div className={`p-3 rounded-full ${stat.color}`}>
-                <stat.icon className="w-6 h-6" />
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {statsCards.map((stat, idx) => (
+          <div key={idx} className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 flex items-center gap-6">
+            <div className={`p-3 rounded-full ${stat.color}`}>
+              <stat.icon className="w-7 h-7" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">{stat.title}</p>
+              <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Charts Section */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
-        {/* Revenue Chart */}
-        <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 flex flex-col">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {summaryCards.map((card, idx) => (
+          <div key={idx} className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6">
+            <p className="text-sm font-medium text-gray-600 mb-2">{card.title}</p>
+            <p className="text-3xl font-bold text-gray-900">{card.value}</p>
+          </div>
+        ))}
+      </div>
+      
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Bar Chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-300 shadow-sm p-6 flex flex-col min-h-[400px]">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold text-gray-900">Revenue Overview</h2>
             <div className="flex space-x-2">
@@ -221,23 +252,18 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex-1 min-h-0">
-            {renderBarChart()}
+            <Bar data={barChartData} options={barChartOptions} />
           </div>
         </div>
 
         {/* Sales Distribution */}
-        <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 flex flex-col">
+        <div className="bg-white rounded-2xl border border-gray-300 shadow-sm p-6 flex flex-col min-h-[400px]">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Sales Distribution</h2>
           <div className="flex-1 min-h-0">
-            {renderPieChart()}
+            <Pie data={pieChartData} options={pieChartOptions} />
           </div>
         </div>
       </div>
-
-      {/* Bottom Spacer */}
-      <div className="h-6"></div>
     </div>
   );
-};
-
-export default Dashboard;
+}

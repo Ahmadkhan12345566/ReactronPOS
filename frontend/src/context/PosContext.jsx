@@ -25,13 +25,16 @@ export const PosProvider = ({ children }) => {
   }, []);
 
   const login = (userData) => {
-    setCurrentUser(userData);
-    localStorage.setItem('currentUser', JSON.stringify(userData));
+    const { user, token } = userData;
+    setCurrentUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('token', token);
   };
 
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
   };
 
   const value = {

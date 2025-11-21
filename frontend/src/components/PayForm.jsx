@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function PayForm({ isOpen, onClose, total, onPaySubmit, warehouses = [] }) {
+export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
   const [formData, setFormData] = useState({
     receivedAmount: '',
     payingAmount: total.toFixed(2),
@@ -11,7 +11,6 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit, warehouse
     saleNote: '',
     staffNote: '',
     quickCash: '10',
-    warehouseId: '' // Add warehouse selection
   });
   
   const [showQuickCash, setShowQuickCash] = useState(true);
@@ -20,17 +19,13 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit, warehouse
   useEffect(() => {
     if (!isOpen) return;
     
-    // Set default warehouse if available
-    const defaultWarehouse = warehouses.length > 0 ? warehouses[0].id : '';
-    
     setFormData(prev => ({
       ...prev,
       payingAmount: total.toFixed(2),
       change: '0.00',
       receivedAmount: '',
-      warehouseId: defaultWarehouse
     }));
-  }, [isOpen, total, warehouses]);
+  }, [isOpen, total]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -75,18 +70,11 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit, warehouse
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validate warehouse selection
-    if (!formData.warehouseId) {
-      alert('Please select a warehouse');
-      return;
-    }
-
     onPaySubmit({
       ...formData,
       method: formData.paymentType,
       amountTendered: parseFloat(formData.receivedAmount) || 0,
       total: total.toFixed(2),
-      warehouseId: formData.warehouseId
     });
     onClose();
   };
@@ -112,30 +100,6 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit, warehouse
         </div>
         
         <form onSubmit={handleSubmit} className="p-4 max-h-[85vh] overflow-y-auto">
-          {/* Warehouse Selection - NEW SECTION */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Warehouse <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="warehouseId"
-              value={formData.warehouseId}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-black"
-              required
-            >
-              <option value="">Select Warehouse</option>
-              {warehouses.map(warehouse => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Select the warehouse to deduct inventory from
-            </p>
-          </div>
-
           {/* Payment Summary - Highlighted Section */}
           <div className="bg-gray-100 rounded-xl p-4 mb-4 border border-gray-300">
             <div className="grid grid-cols-3 gap-3">

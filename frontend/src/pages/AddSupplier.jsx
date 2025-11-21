@@ -3,6 +3,7 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
+import { usePos } from '../context/PosContext';
 import { api } from '../services/api';
 import {
   ArrowPathIcon,

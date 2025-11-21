@@ -46,29 +46,29 @@ function App() {
             <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/categories" element={<Categories />} />
-            <Route path="/categories/add" element={<AddCategory />} />
+            <Route path="/add-category" element={<AddCategory />} />
             <Route path="/products" element={<Products />} />
             <Route path="/brands" element={<Brands />} />
-            <Route path="/brands/add" element={<AddBrand />} />
+            <Route path="/add-brand" element={<AddBrand />} />
             <Route path="/units" element={<Units />} />
-            <Route path="/units/add" element={<AddUnit />} />
+            <Route path="/add-unit" element={<AddUnit />} />
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/billers" element={<Billers/>} />
             <Route path="/suppliers" element={<Suppliers/>} />
-            <Route path="/suppliers/add" element={<AddSupplier />} />
-            <Route path="/sales/return" element={<SalesReturn />} />
-            <Route path="/products/add" element={<AddProduct />} />
+            <Route path="/add-supplier" element={<AddSupplier />} />
+            <Route path="/sales-return" element={<SalesReturn />} />
+            <Route path="/add-product" element={<AddProduct />} />
             <Route path="/pos" element={<POS />} />
             <Route path="/sales" element={<Sales />} />
-            <Route path="/sales/add" element={<AddSales />} />
-            <Route path="sales/report" element={<SalesReport />} />
+            <Route path="/add-sale" element={<AddSales />} />
+            <Route path="/sales-report" element={<SalesReport />} />
             <Route path="/purchases" element={<Purchases />} />
-            <Route path="/purchases/add" element={<AddPurchase />} />
-            <Route path="/purchases/report" element={<PurchaseReport />} />
-            <Route path="/customers/report/due" element={<CustomerDueReport />} />
+            <Route path="/add-purchase" element={<AddPurchase />} />
+            <Route path="/purchase-report" element={<PurchaseReport />} />
+            <Route path="/customer-due-report" element={<CustomerDueReport />} />
             <Route path="/customers" element={<Customers/>} />
-            <Route path="/customers/add" element={<AddCustomer />} />
-            <Route path="/customers/report" element={<CustomerReport />} />
+            <Route path="/add-customer" element={<AddCustomer />} />
+            <Route path="/customer-report" element={<CustomerReport />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
           </Routes>

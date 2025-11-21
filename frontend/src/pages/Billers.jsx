@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import BillerList from '../components/lists/BillerList';
 import { api } from '../services/api';
+import { usePos } from '../context/PosContext';
 
 export default function Billers() {
   const [billers, setBillers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [userRole, setUserRole] = useState('');
 
+  const { currentUser } = usePos(); // Get current user from context
+
   useEffect(() => {
-    // Get user role from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setUserRole(user.role || '');
-    
-    if (user.role === 'admin') {
-      fetchBillers();
+    if (currentUser) {
+      setUserRole(currentUser.role || ''); // Set user role based on currentUser
+      if (currentUser.role === 'admin') {
+        fetchBillers(); // Fetch billers only if the user is an admin
+      }
     }
-  }, []);
+  }, [currentUser]); // Dependency array ensures effect runs when currentUser changes
 
   const fetchBillers = async () => {
     try {

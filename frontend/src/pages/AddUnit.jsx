@@ -3,6 +3,7 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
+import { usePos } from '../context/PosContext';
 import { api } from '../services/api';
 import {
   ArrowPathIcon,
@@ -12,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AddUnit = () => {
-  const [user] = useState(JSON.parse(localStorage.getItem('user')));
+  const { currentUser } = usePos();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,8 +24,8 @@ const AddUnit = () => {
       const data = Object.fromEntries(formData.entries());
       
       
-      if (!user.id) throw new Error('User ID not found in localStorage');
-      data.createdBy = user.id;
+      if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
+      data.createdBy = currentUser.id;
       
       console.log('Data to send:', data);
       await api.post('/api/units', data);

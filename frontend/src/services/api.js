@@ -5,7 +5,7 @@ const isDev = process.env.NODE_ENV === 'development' ||
 
 const API_BASE_URL = isDev 
   ? 'http://localhost:3000' 
-  : 'http://localhost:3000'; // Update with your production server URL
+  : '';
 
 // Helper function to handle API errors
 const handleResponse = async (response) => {
@@ -15,11 +15,33 @@ const handleResponse = async (response) => {
   }
   return response.json();
 };
+// frontend/src/services/api.js
+
+// ... (keep API_BASE_URL and handleResponse functions as they are)
+
+// Helper function to get auth token
+const getAuthToken = () => {
+  return localStorage.getItem('token');
+};
+
+// Helper function to get default headers
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`; // <-- Add the token
+  }
+  return headers;
+};
 
 export const api = {
   async get(endpoint) {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`);
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: getHeaders(), // <-- Use headers
+      });
       return handleResponse(response);
     } catch (error) {
       console.error('API GET Error:', error);
@@ -29,12 +51,9 @@ export const api = {
 
   async post(endpoint, data) {
     try {
-      console.log('Posting to', endpoint, 'with data', data);
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getHeaders(), // <-- Use headers
         body: JSON.stringify(data),
       });
       return handleResponse(response);
@@ -48,9 +67,7 @@ export const api = {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getHeaders(), // <-- Use headers
         body: JSON.stringify(data),
       });
       return handleResponse(response);
@@ -59,11 +76,20 @@ export const api = {
       throw error;
     }
   },
+
   async postFormData(endpoint, data) {
+    // FormData handles its own headers, but we still need the auth token
+    const headers = {};
+    const token = getAuthToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`; // <-- Add the token
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
-        body: data, // No Content-Type header, let browser set it
+        headers: headers, // <-- Use headers
+        body: data,
       });
       return handleResponse(response);
     } catch (error) {
@@ -71,10 +97,12 @@ export const api = {
       throw error;
     }
   },
+
   async delete(endpoint) {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'DELETE',
+        headers: getHeaders(), // <-- Use headers
       });
       return handleResponse(response);
     } catch (error) {

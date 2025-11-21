@@ -75,7 +75,7 @@ export const statusColumn = (accessor, header, size = 100) => ({
 export const actionsColumn = (actions = ['view', 'edit', 'delete'], size = 120) => ({
   id: 'actions',
   header: '',
-  cell: ({ row }) => (
+  cell: ({ row, openModal }) => (
     <div className="flex justify-center">
       <div className="dropdown">
         <button className="text-gray-500 hover:text-gray-700">
@@ -85,17 +85,26 @@ export const actionsColumn = (actions = ['view', 'edit', 'delete'], size = 120) 
          
           <div className="flex space-x-1 mb-2">
             {actions.includes('view') && (
-              <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
+              <button
+                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
+                onClick={() => openModal('view', row.original)}
+              >
                 <EyeIcon className="w-5 h-5" />
               </button>
             )}
             {actions.includes('edit') && (
-              <button className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg">
+              <button
+                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
+                onClick={() => openModal('edit', row.original)}
+              >
                 <PencilIcon className="w-5 h-5" />
               </button>
             )}
             {actions.includes('delete') && (
-              <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg">
+              <button
+                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
+                onClick={() => openModal('delete', row.original)}
+              >
                 <TrashIcon className="w-5 h-5" />
               </button>
             )}

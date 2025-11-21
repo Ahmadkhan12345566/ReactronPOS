@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SupplierList from '../components/lists/SupplierList';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { usePos } from '../context/PosContext';
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);

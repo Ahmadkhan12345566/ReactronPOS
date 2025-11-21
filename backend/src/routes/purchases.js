@@ -1,5 +1,5 @@
 import express from 'express';
-import { models } from '../models/index.js';
+import { models, sequelize } from '../models/index.js';
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
 
 // Create a new purchase with inventory updates
 router.post('/', async (req, res) => {
-  const transaction = await models.sequelize.transaction();
+  const transaction = await sequelize.transaction();
   
   try {
     const { reference, date, status, payment_status, total, paid, due, supplierId, purchaseItems } = req.body;

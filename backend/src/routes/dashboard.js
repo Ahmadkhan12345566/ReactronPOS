@@ -86,18 +86,18 @@ router.get('/', async (req, res) => {
     // Get top selling products for distribution chart
     const topProducts = await models.OrderItem.findAll({
       attributes: [
-        'productId',
+        'product_id',
         [sequelize.fn('SUM', sequelize.col('quantity')), 'totalSold'],
-        [sequelize.fn('SUM', sequelize.col('total')), 'totalRevenue']
+        [sequelize.fn('SUM', sequelize.col('subtotal')), 'totalRevenue']
       ],
-      group: ['productId'],
+      group: ['product_id'],
       order: [[sequelize.fn('SUM', sequelize.col('quantity')), 'DESC']],
       limit: 5,
       raw: true
     });
 
     // Get product names for the top products
-    const productIds = topProducts.map(item => item.productId);
+    const productIds = topProducts.map(item => item.product_id);
     const products = await models.Product.findAll({
       where: { id: productIds },
       attributes: ['id', 'name'],
@@ -113,7 +113,7 @@ router.get('/', async (req, res) => {
     // Format sales distribution data
     const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
     const salesDistribution = topProducts.map((item, index) => ({
-      category: productMap[item.productId] || `Product ${item.productId}`,
+      category: productMap[item.product_id] || `Product ${item.product_id}`,
       value: parseFloat(item.totalRevenue) || 0,
       color: colors[index % colors.length]
     }));
@@ -145,32 +145,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     console.error('GET /api/dashboard error:', error);
-    
-    // Return fallback data if there's an error
-    const fallbackData = {
-      stats: {
-        totalRevenue: 0,
-        totalOrders: 0,
-        totalCustomers: 0,
-        totalProducts: 0
-      },
-      revenueData: [
-        { month: 'Jan', revenue: 0, orders: 0 },
-        { month: 'Feb', revenue: 0, orders: 0 },
-        { month: 'Mar', revenue: 0, orders: 0 }
-      ],
-      salesDistribution: [
-        { category: 'Products', value: 100, color: '#4F46E5' }
-      ],
-      summaryCards: {
-        totalAmount: 0,
-        totalPaid: 0,
-        totalUnpaid: 0,
-        totalOverdue: 0
-      }
-    };
-    
-    res.json(fallbackData);
+    res.status(500).json({ error: 'Failed to fetch dashboard data' });
   }
 });
 
