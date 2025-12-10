@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "name": "posb",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "build": "npm run build --workspace frontend",
+    "dist": "npm run build && npm run dist --workspace frontend",
+    "start:electron": "npm run dev:electron --workspace frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.1.0",
+    "mongoose": "^9.0.0"
+  }
+}
