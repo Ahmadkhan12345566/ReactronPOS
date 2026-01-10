@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { usePos } from '../../hooks/usePos';
 import { useUI } from "../ListComponents/useUI";
 import { selectColumn, indexColumn, imageColumn, statusColumn, actionsColumn } from '../ListComponents/columnHelpers';
+import { api } from '../../services/api';
+import EditBrandForm from '../forms/EditBrandForm';
 
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
@@ -13,11 +15,12 @@ import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function BrandList({ brands = [], setShowForm }) {
+export default function BrandList({ brands = [], setShowForm, onRefresh }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   
   // Status options
   const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
@@ -39,7 +42,9 @@ export default function BrandList({ brands = [], setShowForm }) {
       size: 120,
     },
     statusColumn('status', 'Status'),
-    actionsColumn(['edit', 'delete'])
+    actionsColumn(['edit', 'delete'], 120, {
+      isActionDisabled: (action) => !isAdmin && (action === 'edit' || action === 'delete'),
+    })
   ];
 
   // Filtered data
@@ -49,6 +54,23 @@ export default function BrandList({ brands = [], setShowForm }) {
       brand.name.toLowerCase().includes(search.toLowerCase())
     );
   }, [brands, search, statusFilter]);
+
+  const handleDelete = async (brand) => {
+    try {
+      await api.delete(`/api/brands/${brand.id}`);
+      if (typeof onRefresh === 'function') {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error deleting brand:', error);
+    }
+  };
+
+  const actionRenderers = {
+    edit: ({ data, onClose }) => (
+      <EditBrandForm brand={data} onSaved={onRefresh} onCancel={onClose} />
+    ),
+  };
 
   // Use UI hook
   const {
@@ -63,7 +85,8 @@ export default function BrandList({ brands = [], setShowForm }) {
     rowSelection,
     setRowSelection,
     onAddItem: () => setShowForm(true),
-    isAddDisabled: currentUser.role !== 'admin',
+    isAddDisabled: !isAdmin,
+    onRefresh,
     resetFilters: () => {
       setSearch('');
       setStatusFilter('All');
@@ -95,6 +118,8 @@ export default function BrandList({ brands = [], setShowForm }) {
         table={table} 
         emptyState={emptyState}
         maxHeight={"max-h-[calc(100vh-26rem)]"}
+        handleDelete={handleDelete}
+        actionRenderers={actionRenderers}
       />
       
       <ListPagination 

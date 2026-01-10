@@ -25,6 +25,7 @@ const AddPurchase = () => {
     purchaseItems: false
   });
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   
   const navigate = useNavigate();
 
@@ -39,7 +40,6 @@ const AddPurchase = () => {
       api.get('/api/products'), 
       api.get('/api/stores')
     ]);
-    console.log(productsResponse);
     setSuppliers(suppliersResponse);
     setProducts(productsResponse);
     setStores(storesResponse);
@@ -92,7 +92,6 @@ const AddPurchase = () => {
         purchaseItems: items
       };
       
-      console.log('Purchase data to send:', purchaseData);
       await api.post('/api/purchases', purchaseData);
       navigate('/purchases');
     } catch (error) {
@@ -368,8 +367,6 @@ const AddPurchase = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {purchaseItems.map((item, index) => {
                       const variants = getProductVariants(item.productId);
-                      console.log('Available variants:', variants); // Debug log
-                      
                       return (
                         <tr key={index}>
                           <td className="px-4 py-3">
@@ -482,7 +479,7 @@ const AddPurchase = () => {
         <FormFooter 
           cancelPath="/purchases" 
           submitLabel="Add Purchase" 
-          disabled={currentUser.role !== 'admin'}
+          disabled={!isAdmin}
         />
       </form>
       <SupplierModal 

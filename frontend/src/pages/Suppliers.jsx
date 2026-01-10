@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import SupplierList from '../components/lists/SupplierList';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { usePos } from '../hooks/usePos';
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
@@ -19,12 +18,8 @@ export default function Suppliers() {
       setLoading(true);
       const data = await api.get('/api/suppliers');
       
-      setSuppliers(data);
-      if (data.length === 0) {
-        setError('No suppliers found');  
-      } else {
-        setError(null);
-      }
+      setSuppliers(Array.isArray(data) ? data : []);
+      setError(null);
     } catch (err) {
       setError('Failed to fetch suppliers');
       console.error(err);
@@ -40,7 +35,8 @@ export default function Suppliers() {
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <SupplierList 
         suppliers={suppliers || []} 
-        setShowForm={() => navigate('/add-supplier')} 
+        setShowForm={() => navigate('/add-supplier')}
+        onRefresh={fetchSuppliers}
       />
     </div>
   );

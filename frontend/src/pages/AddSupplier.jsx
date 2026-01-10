@@ -14,6 +14,7 @@ import {
 
 const AddSupplier = () => {
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
 
@@ -29,7 +30,6 @@ const AddSupplier = () => {
         data.image = selectedImage;
       }
       
-      console.log('Data to send:', data);
       await api.post('/api/suppliers', data);
       navigate('/suppliers');
     } catch (error) {
@@ -212,7 +212,7 @@ const AddSupplier = () => {
         <FormFooter 
           cancelPath="/suppliers" 
           submitLabel="Add Supplier" 
-          disabled={currentUser.role !== 'admin'}
+          disabled={!isAdmin}
         />
       </form>
     </div>

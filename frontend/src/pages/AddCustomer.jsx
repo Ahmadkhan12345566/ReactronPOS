@@ -28,7 +28,6 @@ const AddCustomer = () => {
         data.image = selectedImage;
       }
       
-      console.log('Data to send:', data);
       await api.post('/api/customers', data);
       navigate('/customers');
     } catch (error) {

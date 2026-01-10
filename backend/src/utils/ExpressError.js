@@ -1,9 +1,15 @@
 class ExpressError extends Error {
-    constructor(status, message) {
-        super(message);
-        this.status = status;
-    }
+  constructor(message, status = 500) {
+    super(message);
+    this.status = status;
+  }
 }
-const wrapAsync = (func)=> { return function(req, res, next){ func(req, res, next).catch(e=> next(e) )}}
+
+const wrapAsync = (func) => {
+  return function (req, res, next) {
+    func(req, res, next).catch((error) => next(error));
+  };
+};
+
 export default ExpressError;
 export { wrapAsync };

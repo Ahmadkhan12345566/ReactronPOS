@@ -29,6 +29,7 @@ const AddProduct = () => {
   const [stores, setStores] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [accordion, setAccordion] = useState({
     productInfo: true,
@@ -359,7 +360,11 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700">
                     Category <span className="text-red-500">*</span>
                   </label>
-                  <button type="button" onClick={()=>window.location.replace("/#/categories/add")} className="flex items-center text-black text-sm">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/add-category')}
+                    className="flex items-center text-black text-sm"
+                  >
                     <PlusCircleIcon className="w-4 h-4 mr-1" />
                     Add New
                   </button>
@@ -870,7 +875,7 @@ const AddProduct = () => {
         <FormFooter 
           cancelPath="/products" 
           submitLabel="Add Product" 
-          disabled={currentUser.role !== 'admin'}
+          disabled={!isAdmin}
         />
       </form>
       <StoreModal 

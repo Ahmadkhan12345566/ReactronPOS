@@ -14,6 +14,7 @@ import {
 
 const AddUnit = () => {
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,7 +24,6 @@ const AddUnit = () => {
       const formData = new FormData(e.target);
       const data = Object.fromEntries(formData.entries());
       
-      console.log('Data to send:', data);
       await api.post('/api/units', data);
       navigate('/units');
     } catch (error) {
@@ -108,7 +108,7 @@ const AddUnit = () => {
         <FormFooter 
           cancelPath="/units" 
           submitLabel="Add Unit"
-          disabled={currentUser.role !== 'admin'}
+          disabled={!isAdmin}
         />
       </form>
     </div>

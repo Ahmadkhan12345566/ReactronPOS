@@ -2,19 +2,13 @@ import React from 'react';
 import { api } from '../../services/api';
 import EntityForm from './EntityForm';
 
-export default function EditUnitForm({ unit, onSaved, onCancel }) {
+export default function EditCategoryForm({ category, onSaved, onCancel }) {
   const fields = [
     {
       name: 'name',
-      label: 'Unit Name',
+      label: 'Category Name',
       required: true,
-      placeholder: 'Enter unit name',
-    },
-    {
-      name: 'short_name',
-      label: 'Short Name',
-      required: true,
-      placeholder: 'Enter short name',
+      placeholder: 'Enter category name',
     },
     {
       name: 'status',
@@ -23,20 +17,26 @@ export default function EditUnitForm({ unit, onSaved, onCancel }) {
       required: true,
       options: ['Active', 'Inactive'],
     },
+    {
+      name: 'image',
+      label: 'Category Image',
+      type: 'image',
+      fullWidth: true,
+    },
   ];
 
   const initialValues = {
-    name: unit?.name || '',
-    short_name: unit?.short_name || '',
-    status: unit?.status || 'Active',
+    name: category?.name || '',
+    status: category?.status || 'Active',
+    image: category?.image || '',
   };
 
   return (
     <EntityForm
       initialValues={initialValues}
       fields={fields}
-      submitLabel="Save Unit"
-      onSubmit={(values) => api.put(`/api/units/${unit.id}`, values)}
+      submitLabel="Save Category"
+      onSubmit={(values) => api.put(`/api/categories/${category.id}`, values)}
       onSuccess={onSaved}
       onCancel={onCancel}
     />

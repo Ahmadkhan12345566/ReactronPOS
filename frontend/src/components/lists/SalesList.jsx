@@ -85,7 +85,7 @@ export default function SalesList({ sales = [], onRefresh, onAddItem }) {
       size: 140,
       cell: ({ getValue }) => getValue() || 'Unknown'
     },
-    actionsColumn(['view', 'edit', 'delete'], 80)
+    actionsColumn(['view'])
   ], []);
 
   // Corrected filteredData (use `sales` prop and handle possible field-name variants)
@@ -127,7 +127,6 @@ export default function SalesList({ sales = [], onRefresh, onAddItem }) {
     rowSelection,
     setRowSelection,
     onAddItem: onAddItem,
-    onSortToggle: () => console.log('Collapse clicked'),
     resetFilters: () => {
       setSearch('');
       setStatusFilter('All');

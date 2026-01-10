@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { usePos } from '../../hooks/usePos';
 import { useUI } from "../ListComponents/useUI";
-import { 
-  selectColumn, 
-  imageColumn, 
-  statusColumn, 
-  actionsColumn 
+import {
+  selectColumn,
+  statusColumn,
+  actionsColumn
 } from '../ListComponents/columnHelpers';
+import { api } from '../../services/api';
+import EditSupplierForm from '../forms/EditSupplierForm';
 
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
@@ -18,19 +19,19 @@ import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function SupplierList({ suppliers = [], setShowForm }) {
+export default function SupplierList({ suppliers = [], setShowForm, onRefresh }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
   const { currentUser } = usePos();
-  
+  const isAdmin = currentUser?.role === 'admin';
+
   // Status options
   const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
 
   // Columns using helpers
   const columns = [
     selectColumn(),
-    // Image (handles missing or empty urls)
     {
       id: 'image',
       accessorFn: row => row.image || row.icon || '',
@@ -40,7 +41,9 @@ export default function SupplierList({ suppliers = [], setShowForm }) {
         const src = getValue();
         return src ? (
           <img src={src} alt="supplier" className="w-10 h-10 object-cover rounded-md" />
-        ) : <span className="text-xs text-gray-400">—</span>;
+        ) : (
+          <span className="text-xs text-gray-400">--</span>
+        );
       }
     },
     {
@@ -64,7 +67,9 @@ export default function SupplierList({ suppliers = [], setShowForm }) {
       size: 200,
     },
     statusColumn('status', 'Status'),
-    actionsColumn(['view', 'edit', 'delete'])
+    actionsColumn(['view', 'edit', 'delete'], 120, {
+      isActionDisabled: (action) => !isAdmin && (action === 'edit' || action === 'delete'),
+    })
   ];
 
   // Filtered data
@@ -76,6 +81,23 @@ export default function SupplierList({ suppliers = [], setShowForm }) {
         .includes(search.toLowerCase())
     );
   }, [suppliers, search, statusFilter]);
+
+  const handleDelete = async (supplier) => {
+    try {
+      await api.delete(`/api/suppliers/${supplier.id}`);
+      if (typeof onRefresh === 'function') {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+    }
+  };
+
+  const actionRenderers = {
+    edit: ({ data, onClose }) => (
+      <EditSupplierForm supplier={data} onSaved={onRefresh} onCancel={onClose} />
+    ),
+  };
 
   // Use UI hook
   const {
@@ -90,7 +112,8 @@ export default function SupplierList({ suppliers = [], setShowForm }) {
     rowSelection,
     setRowSelection,
     onAddItem: () => setShowForm(true),
-    isAddDisabled: currentUser.role !== 'admin',
+    isAddDisabled: !isAdmin,
+    onRefresh,
     resetFilters: () => {
       setSearch('');
       setStatusFilter('All');
@@ -108,7 +131,7 @@ export default function SupplierList({ suppliers = [], setShowForm }) {
           <React.Fragment key={i}>{btn.element}</React.Fragment>
         ))}
       />
-      
+
       <ListFilter>
         <SearchInput search={search} setSearch={setSearch} placeholder="Search suppliers..." />
         <SelectFilters 
@@ -117,13 +140,15 @@ export default function SupplierList({ suppliers = [], setShowForm }) {
           statusOptions={statusOptions} 
         />
       </ListFilter>
-      
+
       <ListTable 
         table={table} 
         emptyState={emptyState}
         maxHeight="max-h-[calc(100vh-26rem)]"
+        handleDelete={handleDelete}
+        actionRenderers={actionRenderers}
       />
-      
+
       <ListPagination 
         table={table} 
         dataLength={filteredData.length} 

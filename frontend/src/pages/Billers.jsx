@@ -6,18 +6,14 @@ import { usePos } from '../hooks/usePos';
 export default function Billers() {
   const [billers, setBillers] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [userRole, setUserRole] = useState('');
-
-  const { currentUser } = usePos(); // Get current user from context
+  const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
-    if (currentUser) {
-      setUserRole(currentUser.role || ''); // Set user role based on currentUser
-      if (currentUser.role === 'admin') {
-        fetchBillers(); // Fetch billers only if the user is an admin
-      }
+    if (isAdmin) {
+      fetchBillers();
     }
-  }, [currentUser]); // Dependency array ensures effect runs when currentUser changes
+  }, [isAdmin]);
 
   const fetchBillers = async () => {
     try {
@@ -28,8 +24,7 @@ export default function Billers() {
     }
   };
 
-  // Show unauthorized message for billers
-  if (userRole === 'biller') {
+  if (!isAdmin) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
@@ -42,7 +37,7 @@ export default function Billers() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
-      <BillerList Billers={billers} setShowForm={setShowForm} />
+      <BillerList billers={billers} setShowForm={setShowForm} onRefresh={fetchBillers} />
     </div>
   );
 }

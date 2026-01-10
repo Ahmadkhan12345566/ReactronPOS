@@ -6,6 +6,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
+import ExpressError from './utils/ExpressError.js';
 import productsRoute from "./routes/products.js";
 import customersRoute from './routes/customers.js';
 import salesRoute from './routes/sales.js';
@@ -20,7 +21,6 @@ import inventoryRoutes from './routes/inventory.js';
 import salesReturnRoutes from './routes/salesReturns.js';
 import salesReportRoutes from './routes/salesReports.js';
 import invoiceRoutes from './routes/invoices.js';
-import { seedDatabase } from './initialData.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,14 +29,23 @@ const __dirname = path.dirname(__filename);
 export async function startServer() {
   const app = express();
 
-  app.use(cors({ origin: true, credentials: true }));
+  app.disable('x-powered-by');
+
+  const allowedOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+
+  app.use(cors({
+    origin: allowedOrigins.length ? allowedOrigins : true,
+    credentials: true
+  }));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
   app.get('/health', (req, res) => res.send('OK'));
   app.use('/api/products', productsRoute);
   app.use('/api/auth', (await import('./routes/auth.js')).default);
   app.use('/api/sales', salesRoute);
-  app.use('/api/customers', customersRoute);
   app.use('/api/categories', categoriesRoute);
   app.use('/api/brands', brandsRoute);
   app.use('/api/units', (await import('./routes/units.js')).default);
@@ -54,9 +63,15 @@ export async function startServer() {
   app.use('/api/invoices', invoiceRoutes);
   app.use('/api/dashboard', (await import('./routes/dashboard.js')).default);
 
+  app.use((req, res, next) => {
+    next(new ExpressError('Route not found.', 404));
+  });
+
   app.use((err, req, res, next) => {
     console.error('Server error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    const status = err.status || (err.name === 'CastError' ? 400 : 500);
+    const message = err.message || (status === 400 ? 'Invalid request.' : 'Internal server error');
+    res.status(status).json({ error: message });
   });
 
   try {
@@ -64,8 +79,9 @@ export async function startServer() {
     console.log('Database connected successfully');
 
     const port = process.env.PORT || 3000;
-    app.listen(port, 'localhost', () => {
-      console.log(`✅ Express server running at http://localhost:${port}`);
+    const host = process.env.HOST || '0.0.0.0';
+    app.listen(port, host, () => {
+      console.log(`Express server running at http://${host}:${port}`);
     });
   } catch (err) {
     console.error('Startup DB failure', err);
@@ -74,9 +90,10 @@ export async function startServer() {
 }
 
 
-const isDev = true || process.env.NODE_ENV === 'development' || process.env.RUN_SERVER === 'true';
+const shouldAutoStart =
+  process.env.RUN_SERVER === 'true' || process.env.NODE_ENV === 'development';
 
-if (isDev) {
+if (shouldAutoStart) {
   startServer()
     .then(() => console.log('Dev server started'))
     .catch(err => {
@@ -86,3 +103,5 @@ if (isDev) {
 } else {
   console.log('Skipping dev server startup (NODE_ENV != development)');
 }
+
+

@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { useError } from './ErrorContext';
 
 export const PosContext = createContext();
 
 export const PosProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { showError } = useError();
 
   useEffect(() => {
     // Check if user is logged in
@@ -17,7 +18,7 @@ export const PosProvider = ({ children }) => {
 
     // Add an event listener for unauthorized events
     const handleUnauthorized = () => {
-      alert('Unauthorized event caught! Logging out.'); // For debugging
+      showError('Your session has expired. Please sign in again.');
       logout();
     };
 

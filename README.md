@@ -1,108 +1,81 @@
-# React POS System Template
+# ReactronPOS
 
-[![React](https://img.shields.io/badge/React-19.1-61DAFB.svg?logo=react)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1-06B6D4.svg?logo=tailwind-css)](https://tailwindcss.com/)
-[![daisyUI](https://img.shields.io/badge/daisyUI-5.0-FF7B00)](https://daisyui.com/)
-
-Modern Point of Sale system template for retail management featuring sales, inventory, and customer management.
-
-![POS Dashboard Preview](https://raw.githubusercontent.com/Ahmadkhan12345566/posb/main/frontend/public/screenshot.png)
+Modern point-of-sale system for retail management with inventory, sales, purchasing, and reporting.
 
 ## Features
 
-- **POS & Checkout**
-  - Fast product selection, quantity adjustments, customer lookup, and receipt printing.
-  - Built-in payment flow and responsive product grid.
+- POS checkout workflow with cart, payment, and receipt support
+- Product, category, brand, unit, supplier, and customer management
+- Inventory tracking with variants and store-level quantities
+- Sales, purchases, invoices, and return workflows
+- Reporting with PDF/Excel exports
+- Role-based access for admin and biller users
 
-- **Inventory**
-  - Add/edit products, categories/brands/units, stock tracking with alerts, and barcode/SKU support.
+## Tech Stack
 
-- **Sales & Purchases**
-  - Track sales, manage purchases and suppliers, and handle invoices.
+- Frontend: React, Vite, Tailwind CSS, Headless UI, Heroicons
+- Backend: Node.js, Express, MongoDB (Mongoose)
+- Utilities: jsPDF, SheetJS
 
-- **Reports & Exports**
-  - Sales/purchase/customer reports with PDF/Excel export.
+## Getting Started
 
-- **Multi-user & Roles**
-  - User accounts, roles and basic permissions.
+1) Install dependencies:
 
-- **Utilities**
-  - Image uploads, product variants, and bulk actions.
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/Ahmadkhan12345566/posb.git
-cd react-pos-template
-```
-
-2. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Start development server:
+2) Configure environment variables (see below).
+
+3) Run the app:
+
 ```bash
 npm run dev
 ```
 
-4. Build for production:
+This runs both the backend and frontend workspaces.
+
+### Optional: Seed data
+
 ```bash
-npm run build
+npm run seed --workspace backend
 ```
 
-## Technology Stack
+## Environment Variables
 
-### Frontend
-- **React 19.1** - Core framework
-- **Tailwind CSS 4.1** - Styling and layout
-- **daisyUI 5.0** - UI component library
-- **React Router 7.7** - Navigation and routing
+Create `.env` files as needed:
 
-### Utilities
-- **Heroicons** - Icon library
-- **Headless UI** - Accessible components
-- **React Table** - Data table management
-- **jsPDF + SheetJS** - PDF/Excel export
+### Backend (`backend/.env`)
+
+```bash
+MONGODB_URI=mongodb://localhost:27017/posb
+JWT_SECRET=your-secret
+CORS_ORIGIN=http://localhost:5173
+PORT=3000
+HOST=0.0.0.0
+```
+
+### Frontend (`frontend/.env`)
+
+```bash
+VITE_API_URL=http://localhost:3000
+```
 
 ## Project Structure
 
 ```
-src/
-├── components/           # Reusable UI components
-│   ├── forms/            # Form components
-│   ├── lists/            # Data listing components
-│   └── ListComponents/   # Listing components
-├── context/              # Context providers
-├── pages/                # Application pages
-│   ├── Dashboard.jsx
-│   ├── Products.jsx
-│   ├── POS.jsx
-│   ├── Sales.jsx
-│   └── Purchases.jsx
-├── assets/               # Static assets
-├── App.jsx               # Main application
-└── main.jsx              # Entry point
+backend/      # API, models, routes, database config
+frontend/     # React app, components, pages, assets
+seed.js       # root seed helper
 ```
 
-## Key Components
+## Scripts
 
-1. **POS Interface (`POS.jsx`)** — live order/cart management, customer selection, payment, and receipts.  
-2. **Product Management (`Products.jsx`, `AddProduct.jsx`)** — product CRUD, images, SKUs/barcodes, and stock controls.  
-3. **Data Tables (`ProductList.jsx`)** — searchable, sortable tables with pagination, bulk actions, and exports.  
-4. **Form System (`ProductForm.jsx`)** — dynamic accordion forms and validation-ready layout.
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Open a Pull Request
+- `npm run dev` - start backend + frontend
+- `npm run build` - build frontend
+- `npm run dist` - build frontend + package electron app
+- `npm run start:electron` - run electron dev shell
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-```
+MIT

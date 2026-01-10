@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { usePos } from '../../hooks/usePos';
 import { useUI } from "../ListComponents/useUI";
-import { useEffect } from 'react';
 import { 
   selectColumn, 
   indexColumn, 
@@ -9,6 +8,7 @@ import {
   actionsColumn
 } from '../ListComponents/columnHelpers';
 import { api } from '../../services/api';
+import EditUnitForm from '../forms/EditUnitForm';
 
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
@@ -20,11 +20,12 @@ import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function UnitList({ units = [], setShowForm }) {
+export default function UnitList({ units = [], setShowForm, onRefresh }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
 
 
  
@@ -57,7 +58,9 @@ export default function UnitList({ units = [], setShowForm }) {
       size: 120,
     },
     statusColumn('status', 'Status'),
-    actionsColumn(['edit', 'delete'])
+    actionsColumn(['edit', 'delete'], 120, {
+      isActionDisabled: (action) => !isAdmin && (action === 'edit' || action === 'delete'),
+    })
   ];
 
   // Filtered data
@@ -69,25 +72,21 @@ export default function UnitList({ units = [], setShowForm }) {
         .includes(search.toLowerCase())
     );
   }, [units, search, statusFilter]);
-   useEffect(() => {
-  filteredData.forEach(unit => {
-    console.log(unit);
-  });
-}, [filteredData]);
-
   const handleDelete = async (unit) => {
     try {
       await api.delete(`/api/units/${unit.id}`);
-      // You might want to refresh the list of units here
+      if (typeof onRefresh === 'function') {
+        onRefresh();
+      }
     } catch (error) {
       console.error('Error deleting unit:', error);
     }
   };
 
-  const handleEdit = async (unit) => {
-    // For now, just log the edited unit.
-    // You might want to refresh the list of units here
-    console.log('Edited unit:', unit);
+  const actionRenderers = {
+    edit: ({ data, onClose }) => (
+      <EditUnitForm unit={data} onSaved={onRefresh} onCancel={onClose} />
+    ),
   };
 
   // Use UI hook
@@ -103,7 +102,8 @@ export default function UnitList({ units = [], setShowForm }) {
     rowSelection,
     setRowSelection,
     onAddItem: () => setShowForm(true),
-    isAddDisabled: currentUser.role !== 'admin',
+    isAddDisabled: !isAdmin,
+    onRefresh,
     resetFilters: () => {
       setSearch('');
       setStatusFilter('All');
@@ -136,7 +136,7 @@ export default function UnitList({ units = [], setShowForm }) {
         emptyState={emptyState}
         maxHeight="max-h-[calc(100vh-26rem)]"
         handleDelete={handleDelete}
-        handleEdit={handleEdit}
+        actionRenderers={actionRenderers}
       />
       
       <ListPagination 

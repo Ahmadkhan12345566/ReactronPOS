@@ -17,7 +17,8 @@ export default function Sales() {
     try {
       setLoading(true);
       const data = await api.get('/api/sales');
-      setSales(data);
+      setSales(Array.isArray(data) ? data : []);
+      setError(null);
     } catch (err) {
       setError('Failed to fetch sales');
       console.error(err);

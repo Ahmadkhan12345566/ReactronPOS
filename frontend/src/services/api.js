@@ -1,26 +1,45 @@
 // Determine if we're in development or production
-const isDev = process.env.NODE_ENV === 'development' || 
-              window.location.hostname === 'localhost' || 
-              window.location.hostname === '127.0.0.1';
+const isDev = import.meta.env?.DEV ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1';
 
-const API_BASE_URL = isDev 
-  ? 'http://localhost:3000' 
-  : '';
+const normalizeBaseUrl = (value) => (value ? value.replace(/\/+$/, '') : '');
+const API_BASE_URL = normalizeBaseUrl(
+  import.meta.env?.VITE_API_URL || (isDev ? 'http://localhost:3000' : '')
+);
 
 // Helper function to handle API errors
 const handleResponse = async (response) => {
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: `HTTP error! status: ${response.status}` }));
+    let errorPayload = { error: `HTTP error! status: ${response.status}` };
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      errorPayload = await response.json().catch(() => errorPayload);
+    } else {
+      const text = await response.text().catch(() => '');
+      if (text) errorPayload = { error: text };
+    }
+
     if (response.status === 401 || response.status === 403) {
       // Token is invalid or expired, notify the app to log out
-      window.dispatchEvent(new CustomEvent('apiError', { detail: error.error || 'You are not authorized to do that.' }));
+      window.dispatchEvent(new CustomEvent('apiError', { detail: errorPayload.error || 'You are not authorized to do that.' }));
       window.dispatchEvent(new Event('unauthorized'));
     } else {
-        window.dispatchEvent(new CustomEvent('apiError', { detail: error.error || `HTTP error! status: ${response.status}` }));
+      window.dispatchEvent(new CustomEvent('apiError', { detail: errorPayload.error || `HTTP error! status: ${response.status}` }));
     }
-    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+    throw new Error(errorPayload.error || `HTTP error! status: ${response.status}`);
   }
-  return response.json();
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  return response.text();
 };
 // frontend/src/services/api.js
 

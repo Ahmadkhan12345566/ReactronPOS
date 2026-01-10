@@ -2,6 +2,7 @@ import GlobalErrorHandler from './components/GlobalErrorHandler';
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { PosProvider } from './context/PosContext';
+import { useError } from './context/ErrorContext';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import AddProduct from './pages/AddProduct';
@@ -32,11 +33,13 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import { useEffect } from 'react';
 function App() {
+  const { showError } = useError();
+
   useEffect(() => {
-  window.electronAPI?.onBackendError((message) => {
-    alert('Backend failed: ' + message);
-  });
-}, []);
+    window.electronAPI?.onBackendError((message) => {
+      showError(`Backend failed: ${message}`);
+    });
+  }, [showError]);
 
   return (
     <PosProvider>

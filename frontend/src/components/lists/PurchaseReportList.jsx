@@ -11,6 +11,7 @@ import ListPagination from '../ListComponents/ListPagination';
 import DateRangePicker from '../ListComponents/DateRangePicker';
 import SelectField from '../ListComponents/SelectField';
 import GenerateButton from '../ListComponents/GenerateButton';
+import { exportToPDF } from '../ListComponents/exportFunctions';
 import ListControlButtons from '../ListComponents/ListControlButtons';
 import SearchInput from '../ListComponents/SearchInput';
 
@@ -20,6 +21,9 @@ export default function PurchaseReportList({ reports }) {
   const [toDate, setToDate] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('All');
   const [productFilter, setProductFilter] = useState('All');
+  const handleGenerate = () => {
+    exportToPDF(filteredData, 'purchase_report');
+  };
   
   // Supplier options
   const supplierOptions = ['All', 'Main Supplier', 'Electro Mart', 'Prime Suppliers'];
@@ -185,7 +189,7 @@ export default function PurchaseReportList({ reports }) {
               widthClass="w-full md:w-40"
             />
 
-            <GenerateButton onClick={() => console.log('Generate report')} />
+            <GenerateButton onClick={handleGenerate} label="Generate PDF" />
           </div>
         </div>
       </ListFilter>

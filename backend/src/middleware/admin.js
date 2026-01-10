@@ -1,9 +1,8 @@
-import ExpressError  from "../utils/ExpressError.js";
-
+import ExpressError from "../utils/ExpressError.js";
 
 const isAdmin = (req, res, next) => {
-  if (req.user.role !== "admin") {
-    return next(new ExpressError("You are not authorized to do that", 401));
+  if (!req.user || req.user.role !== "admin") {
+    return next(new ExpressError("You are not authorized to do that.", 403));
   }
   next();
 };

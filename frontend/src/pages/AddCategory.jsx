@@ -14,6 +14,7 @@ import {
 
 const AddCategory = () => {
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
 
@@ -32,7 +33,6 @@ const AddCategory = () => {
       if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
       data.createdBy = currentUser.id;
       
-      console.log('Data to send:', data);
       await api.post('/api/categories', data);
       navigate('/categories');
     } catch (error) {
@@ -176,7 +176,7 @@ const AddCategory = () => {
         <FormFooter 
           cancelPath="/categories" 
           submitLabel="Add Category" 
-          disabled={currentUser.role !== 'admin'}
+          disabled={!isAdmin}
         />
       </form>
     </div>

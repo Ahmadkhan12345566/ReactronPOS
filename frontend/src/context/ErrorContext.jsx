@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useEffect, useState, useContext } from 'react';
 
 const ErrorContext = createContext();
 
@@ -11,33 +11,42 @@ export const ErrorProvider = ({ children }) => {
 
   const showError = (message) => {
     setError(message);
-    setTimeout(() => {
-      setError(null);
-    }, 5000); // Clear error after 5 seconds
   };
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [error]);
 
   return (
     <ErrorContext.Provider value={{ showError }}>
       {children}
-      {error && <ErrorToast message={error} />}
+      {error && <ErrorToast message={error} onClose={() => setError(null)} />}
     </ErrorContext.Provider>
   );
 };
 
-const ErrorToast = ({ message }) => {
+const ErrorToast = ({ message, onClose }) => {
   return (
-    <div style={{
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      backgroundColor: '#f44336', // Red
-      color: 'white',
-      padding: '16px',
-      borderRadius: '4px',
-      zIndex: 1000,
-      boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
-    }}>
-      {message}
+    <div
+      role="alert"
+      aria-live="assertive"
+      className="fixed top-5 right-5 z-50 w-full max-w-sm rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-lg"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span>{message}</span>
+        <button
+          type="button"
+          className="text-red-600 hover:text-red-800"
+          onClick={onClose}
+          aria-label="Dismiss error"
+        >
+          ×
+        </button>
+      </div>
     </div>
   );
 };

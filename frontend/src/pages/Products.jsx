@@ -18,13 +18,9 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await api.get('/api/products');
-      setProducts(data);
-      if (data.length === 0) {
-        setError('No products found');  
-      } else {
-        setError(null);
-      }
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to fetch products');
       console.error(err);
@@ -43,7 +39,7 @@ export default function Products() {
         <ProductList 
           products={products || []} 
           setShowForm={setShowForm} 
-          onProductUpdate={fetchProducts}
+          onRefresh={fetchProducts}
         />
       </div>
       {showForm && <ImportProduct showForm={showForm} setShowForm={setShowForm} onImportComplete={fetchProducts}/>}

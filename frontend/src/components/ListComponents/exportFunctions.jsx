@@ -1,6 +1,6 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import writeXlsxFile from 'write-excel-file';
 
 export function exportToPDF(data, fileHeader) {
   if (!data || data.length === 0) return;
@@ -43,7 +43,7 @@ export function exportToPDF(data, fileHeader) {
   doc.save(`${fileHeader}_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
-export function exportToExcel(data, fileHeader) {
+export async function exportToExcel(data, fileHeader) {
   if (!data || data.length === 0) return;
   
   // Also truncate long strings for Excel export
@@ -60,9 +60,22 @@ export function exportToExcel(data, fileHeader) {
     });
     return processedItem;
   });
-  
-  const worksheet = XLSX.utils.json_to_sheet(excelData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
-  XLSX.writeFile(workbook, `${fileHeader}_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+  const headers = Object.keys(excelData[0] || {});
+  if (!headers.length) return;
+
+  const schema = headers.map(header => ({
+    column: header,
+    type: String,
+    value: row => {
+      const value = row[header];
+      if (value === null || value === undefined) return '';
+      return typeof value === 'string' ? value : String(value);
+    }
+  }));
+
+  await writeXlsxFile(excelData, {
+    schema,
+    fileName: `${fileHeader}_${new Date().toISOString().slice(0,10)}.xlsx`,
+  });
 }

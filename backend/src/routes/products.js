@@ -2,11 +2,13 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { toObjectWithId } from '../utils/mongoose.js';
-import { Product, ProductVariant, Inventory, Category, Brand, Unit, User } from '../models/index.js';
+import ExpressError from '../utils/ExpressError.js';
+import { Product, ProductVariant, Inventory } from '../models/index.js';
 import { authenticateToken } from '../middleware/auth.js';
 import isAdmin from '../middleware/admin.js';
 
 const router = express.Router();
+const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 // GET /products - This is a data-intensive route.
 // The implementation below uses multiple queries in a loop (N+1 problem) for simplicity of implementation.
@@ -26,6 +28,7 @@ router.get('/', async (req, res) => {
       for (const variant of variants) {
         const inventories = await Inventory.find({ variant: variant._id }).lean();
         variant.Inventories = inventories;
+        variant.inventories = inventories;
         inventories.forEach(inv => {
           totalQty += Number(inv.qty || 0);
         });
@@ -36,17 +39,44 @@ router.get('/', async (req, res) => {
 
     const transformedProducts = products.map(product => {
       const firstVariant = product.ProductVariants && product.ProductVariants[0] ? product.ProductVariants[0] : null;
+      const categoryId = product.category?._id?.toString?.() || product.category?.toString?.() || null;
+      const brandId = product.brand?._id?.toString?.() || product.brand?.toString?.() || null;
+      const unitId = product.unit?._id?.toString?.() || product.unit?.toString?.() || null;
+      const subCategoryId = product.subCategory?._id?.toString?.() || product.subCategory?.toString?.() || null;
+      const supplierId = product.supplier?._id?.toString?.() || product.supplier?.toString?.() || null;
+      const createdById = product.createdBy?._id?.toString?.() || product.createdBy?.toString?.() || null;
+
       return {
         id: product._id.toString(),
         name: product.name,
+        description: product.description || '',
+        status: product.status || 'Active',
+        productType: product.productType,
+        sellingType: product.sellingType || '',
+        taxType: product.taxType || '',
+        tax: product.tax ?? null,
+        discountType: product.discountType || '',
+        discountValue: product.discountValue ?? null,
+        warranties: product.warranties || '',
+        barcodeSymbology: product.barcodeSymbology || '',
+        slug: product.slug || '',
         category: product.category ? product.category.name : '',
+        categoryId,
+        subCategoryId,
         brand: product.brand ? product.brand.name : '',
-        price: firstVariant ? Number(firstVariant.price || 0) : 0,
+        brandId,
         unit: product.unit ? product.unit.name : '',
+        unitId,
+        supplierId,
+        price: firstVariant ? Number(firstVariant.price || 0) : 0,
         qty: product.qty,
         image: product.image || null,
         createdBy: product.createdBy ? product.createdBy.name : 'Unknown',
-        ProductVariants: product.ProductVariants.map(v => ({...v, id: v._id.toString()})),
+        createdById,
+        ProductVariants: product.ProductVariants.map(v => ({
+          ...v,
+          id: v._id.toString(),
+        })),
       };
     });
 
@@ -63,17 +93,26 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
   session.startTransaction();
   try {
     const {
-      name, description, categoryId, subCategoryId, brandId, unitId,
+      name, status, description, categoryId, subCategoryId, brandId, unitId,
       productType, taxType, tax, discountType, discountValue,
       warranties, barcodeSymbology, sellingType, image, supplierId, slug,
       sku, itemBarcode, price, cost, weight, quantity, quantityAlert, storeId,
       variants
     } = req.body;
 
+    if (!name || !name.trim()) {
+      throw new ExpressError('Product name is required.', 400);
+    }
+
+    if (!productType || !['single', 'variable'].includes(productType)) {
+      throw new ExpressError('Invalid product type.', 400);
+    }
+
     const toNull = (val) => (val === '' || val === undefined ? null : val);
 
     const productData = {
-      name,
+      name: name.trim(),
+      status: toNull(status) || 'Active',
       description: toNull(description),
       category: toNull(categoryId),
       subCategory: toNull(subCategoryId),
@@ -141,7 +180,7 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
   } catch (error) {
     await session.abortTransaction();
     console.error('POST /api/products error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(error.status || 500).json({ error: error.message });
   } finally {
     session.endSession();
   }
@@ -153,6 +192,9 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
     session.startTransaction();
     try {
         const productId = req.params.id;
+        if (!isValidObjectId(productId)) {
+            throw new ExpressError('Invalid product id.', 400);
+        }
         const { userId } = req.user;
         
         // --- Lock Check ---
@@ -167,16 +209,29 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
         // --- End Lock Check ---
 
         const {
-            name, description, categoryId, subCategoryId, brandId, unitId,
+            name, status, description, categoryId, subCategoryId, brandId, unitId,
             productType, taxType, tax, discountType, discountValue,
             warranties, barcodeSymbology, sellingType, image, supplierId, slug,
             variants // Expect variants to be an array for both single and variable
         } = req.body;
 
+        if (!name || !name.trim()) {
+            throw new ExpressError('Product name is required.', 400);
+        }
+
+        if (!productType || !['single', 'variable'].includes(productType)) {
+            throw new ExpressError('Invalid product type.', 400);
+        }
+
+        if (!Array.isArray(variants)) {
+            throw new ExpressError('Variants must be provided as an array.', 400);
+        }
+
         const toNull = (val) => (val === '' || val === undefined ? null : val);
 
         const productData = {
-            name,
+            name: name.trim(),
+            status: toNull(status) || product.status || 'Active',
             description: toNull(description),
             category: toNull(categoryId),
             subCategory: toNull(subCategoryId),
@@ -197,12 +252,17 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
         };
 
         const updatedProduct = await Product.findByIdAndUpdate(productId, productData, { new: true, session });
+        if (!updatedProduct) {
+            throw new ExpressError('Product not found', 404);
+        }
         
         // Get current variants from DB
         const existingVariants = await ProductVariant.find({ product: productId }).session(session);
         const existingVariantIds = existingVariants.map(v => v._id.toString());
         
-        const incomingVariantIds = variants.map(v => v._id).filter(id => id);
+        const incomingVariantIds = variants
+            .map(v => v._id || v.id)
+            .filter(id => id);
 
         // Variants to delete are those in DB but not in the incoming request
         const variantsToDelete = existingVariantIds.filter(id => !incomingVariantIds.includes(id));
@@ -262,7 +322,7 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
     } catch (error) {
         await session.abortTransaction();
         console.error('PUT /api/products/:id error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(error.status || 500).json({ error: error.message });
     } finally {
         session.endSession();
     }
@@ -274,6 +334,9 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
     session.startTransaction();
     try {
       const productId = req.params.id;
+      if (!isValidObjectId(productId)) {
+        throw new ExpressError('Invalid product id.', 400);
+      }
   
       // Find variants associated with the product
       const variants = await ProductVariant.find({ product: productId }).session(session);
@@ -288,7 +351,7 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
       // Delete the main product
       const deletedProduct = await Product.findByIdAndDelete(productId).session(session);
       if (!deletedProduct) {
-        throw new Error('Product not found');
+        throw new ExpressError('Product not found', 404);
       }
   
       await session.commitTransaction();
@@ -296,7 +359,7 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
     } catch (error) {
       await session.abortTransaction();
       console.error('DELETE /products/:id error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     } finally {
       session.endSession();
     }
@@ -326,6 +389,7 @@ const populateProductDetails = async (product, storeId) => {
         });
 
         variant.Inventories = inventories;
+        variant.inventories = inventories;
         totalQty += variantQty;
         variantsForProduct.push(variant);
     }
@@ -354,6 +418,9 @@ router.get('/pos', async (req, res) => {
         const { storeId } = req.query;
         if (!storeId) {
             return res.status(400).json({ message: 'storeId query parameter is required.' });
+        }
+        if (!isValidObjectId(storeId)) {
+            return res.status(400).json({ message: 'Invalid storeId.' });
         }
     
         const products = await Product.find({ status: 'Active' })
@@ -385,6 +452,9 @@ router.put('/:id/lock', authenticateToken, async (req, res) => {
     const { userId } = req.user;
 
     try {
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ message: 'Invalid product id.' });
+        }
         let updatedProductDoc;
         if (lock) {
             const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);

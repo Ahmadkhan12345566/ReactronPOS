@@ -17,20 +17,17 @@ const Purchases = () => {
     try {
       setLoading(true);
       const data = await api.get('/api/purchases');
+      const purchaseRows = Array.isArray(data) ? data : [];
       
       // Format the data to match the frontend expectations
-      const formattedData = data.map(purchase => ({
+      const formattedData = purchaseRows.map(purchase => ({
         ...purchase,
         paymentStatus: purchase.payment_status, // Map payment_status to paymentStatus
         supplier: purchase.Supplier ? purchase.Supplier.name : 'Unknown Supplier'
       }));
       
       setPurchases(formattedData);
-      if (data.length === 0) {
-        setError('No purchases found');  
-      } else {
-        setError(null);
-      }
+      setError(null);
     } catch (err) {
       setError('Failed to fetch purchases');
       console.error(err);
@@ -47,7 +44,7 @@ const Purchases = () => {
       <div className="flex-1 min-h-0">
         <PurchaseList 
           purchases={purchases || []} 
-          onAddPurchase={() => navigate("/purchases/add")}
+          onAddPurchase={() => navigate("/add-purchase")}
         />
       </div>
     </div>

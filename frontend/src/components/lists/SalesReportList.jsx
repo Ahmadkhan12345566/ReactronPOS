@@ -12,7 +12,8 @@ import ListPagination from '../ListComponents/ListPagination';
 import DateRangePicker from '../ListComponents/DateRangePicker';
 import SelectField from '../ListComponents/SelectField';
 import GenerateButton from '../ListComponents/GenerateButton';
-import { PrinterIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { exportToPDF } from '../ListComponents/exportFunctions';
+import { PrinterIcon } from '@heroicons/react/24/outline';
 import { 
   CurrencyDollarIcon, 
   ClipboardDocumentCheckIcon, 
@@ -39,6 +40,9 @@ export default function SalesReportList({ reports }) {
   // Print function
   const handlePrint = () => {
     window.print();
+  };
+  const handleGenerate = () => {
+    exportToPDF(filteredData, 'sales_report');
   };
 
   // Columns configuration
@@ -155,15 +159,10 @@ export default function SalesReportList({ reports }) {
   // Add custom buttons to controlButtons
   const customControlButtons = [
     ...controlButtons,
-    { 
+    {
       icon: <PrinterIcon className="w-5 h-5" />,
       onClick: handlePrint,
       title: 'Print'
-    },
-    { 
-      icon: <ChevronUpIcon className="w-5 h-5" />,
-      onClick: () => console.log('Chevron clicked'),
-      title: 'More options'
     }
   ];
 
@@ -222,7 +221,7 @@ export default function SalesReportList({ reports }) {
             colClass="md:col-span-3"
           />
 
-          <GenerateButton onClick={() => console.log('Generated')} />
+          <GenerateButton onClick={handleGenerate} label="Generate PDF" />
         </div>
       </ListFilter>
       

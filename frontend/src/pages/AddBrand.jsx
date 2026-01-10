@@ -14,6 +14,7 @@ import {
 
 const AddBrand = () => {
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
 
@@ -32,7 +33,6 @@ const AddBrand = () => {
       if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
       data.createdBy = currentUser.id;
       
-      console.log('Data to send:', data);
       await api.post('/api/brands', data);
       navigate('/brands');
     } catch (error) {
@@ -176,7 +176,7 @@ const AddBrand = () => {
         <FormFooter 
           cancelPath="/brands" 
           submitLabel="Add Brand" 
-          disabled={currentUser.role !== 'admin'}
+          disabled={!isAdmin}
         />
       </form>
     </div>
