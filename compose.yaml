@@ -1,0 +1,48 @@
+services:
+  # 1. MySQL Database Service
+  db:
+    image: mysql:8.0
+    container_name: posb_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: pos_local
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  # 2. Node.js Backend Service (Pulls from Docker Hub)
+  backend:
+    image: abdulrahmansoftware/posb-backend:v1
+    container_name: posb_backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASS=rootpassword
+      - DB_NAME=pos_local
+      - JWT_SECRET=your_super_secret_jwt_key_here
+      - NODE_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Frontend Service (Pulls from Docker Hub)
+  frontend:
+    image: abdulrahmansoftware/posb-frontend:v1
+    container_name: posb_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

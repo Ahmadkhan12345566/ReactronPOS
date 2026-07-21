@@ -64,7 +64,7 @@ export async function startServer() {
     console.log('Database synced successfully');
 
     const port = process.env.PORT || 3000;
-    app.listen(port, 'localhost', () => {
+    app.listen(port, '0.0.0.0', 'localhost', () => {
       console.log(`✅ Express server running at http://localhost:${port}`);
     });
   } catch (err) {
