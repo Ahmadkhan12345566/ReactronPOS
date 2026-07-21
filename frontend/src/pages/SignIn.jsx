@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { usePos } from '../context/PosContext'; // <-- Import usePos
+import { usePos } from '../hooks/usePos'; // <-- Import usePos
 import { useNavigate } from 'react-router-dom'; // <-- Import useNavigate
 
 export default function SignIn() {
@@ -51,6 +51,11 @@ export default function SignIn() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-gray-800 p-8">
           <div className="space-y-5">
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+                {error}
+              </div>
+            )}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address

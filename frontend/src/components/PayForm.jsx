@@ -14,7 +14,6 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
   });
   
   const [showQuickCash, setShowQuickCash] = useState(true);
-  const [showPoints, setShowPoints] = useState(false);
   
   useEffect(() => {
     if (!isOpen) return;
@@ -51,7 +50,6 @@ export default function PayForm({ isOpen, onClose, total, onPaySubmit }) {
     setFormData(prev => ({ ...prev, paymentType: type }));
     
     setShowQuickCash(type === 'cash');
-    setShowPoints(type === 'points');
     
     if (type !== 'cash') {
       setFormData(prev => ({ ...prev, change: '0.00' }));

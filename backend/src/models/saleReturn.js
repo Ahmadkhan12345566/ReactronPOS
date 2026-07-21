@@ -1,31 +1,59 @@
-// backend/src/models/saleReturn.js
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-export default function SaleReturnModel(sequelize, DataTypes) {
-  const SaleReturn = sequelize.define('SaleReturn', {
-    // ... (id, date, status, total, paid, due, payment_status)
-    
-    // ADD THIS FIELD
-    warehouseId: {
-      type: DataTypes.INTEGER,
-      allowNull: true, // or false if you make it required in the form
-      references: {
-        model: 'warehouses',
-        key: 'id'
-      }
-    }
-  }, {
-    tableName: 'sale_returns',
-    timestamps: true
-  });
+const SaleReturn = sequelize.define('SaleReturn', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  reference: {
+    type: DataTypes.STRING,
+  },
+  date: {
+    type: DataTypes.DATE,
+  },
+  status: {
+    type: DataTypes.ENUM('Pending', 'Completed'),
+    defaultValue: 'Pending',
+  },
+  total: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+  },
+  paid: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
+  },
+  due: {
+    type: DataTypes.FLOAT,
+  },
+  payment_status: {
+    type: DataTypes.ENUM('Paid', 'Unpaid', 'Overdue'),
+    defaultValue: 'Unpaid',
+  },
+  customerId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'customer',
+  },
+  saleId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'sale',
+  },
+  storeId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'store',
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+}, {
+  tableName: 'sale_returns',
+  timestamps: true,
+});
 
-  SaleReturn.associate = function(models) {
-    SaleReturn.belongsTo(models.Customer, { foreignKey: 'customerId' });
-    SaleReturn.belongsTo(models.Sale, { foreignKey: 'saleId' });
-    SaleReturn.hasMany(models.ReturnItem, { foreignKey: 'returnId' });
-    
-    // ADD THIS ASSOCIATION
-    SaleReturn.belongsTo(models.Warehouse, { foreignKey: 'warehouseId' });
-  };
-
-  return SaleReturn;
-}
+export default SaleReturn;

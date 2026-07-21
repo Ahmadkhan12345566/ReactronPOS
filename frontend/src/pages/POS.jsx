@@ -1,17 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import CustomerForm from '../components/CustomerForm';
 import PayForm from '../components/PayForm';
 import Receipt from "../components/Receipt";
 import { api } from '../services/api';
-import { usePos } from '../context/PosContext';
+import { usePos } from '../hooks/usePos';
+
+// Custom hook to get the previous value of a prop or state
+const usePrevious = (value) => {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref.current;
+};
 
 export default function POS() {
   const { currentUser } = usePos();
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [warehouses, setWarehouses] = useState([]); // Add warehouses state
-  const [selectedWarehouse, setSelectedWarehouse] = useState('');
+  const [stores, setStores] = useState([]);
+  const [selectedStore, setSelectedStore] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
@@ -29,33 +38,76 @@ export default function POS() {
   const tax = subtotal * 0.08;
   const total = subtotal + tax - discount;
 
+  const prevOrderItems = usePrevious(orderItems);
+
+  const fetchProducts = useCallback(async (storeId) => {
+    if (!storeId) return;
+    try {
+      setLoading(true);
+      const data = await api.get(`/api/products/pos?storeId=${storeId}`);
+      setProducts(data);
+    } catch (err) {
+      setError('Failed to fetch products for the selected store');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Effect for unlocking items when they are removed from the cart
+  useEffect(() => {
+    const itemsToUnlock = (prevOrderItems || []).filter(
+      (prevItem) => !orderItems.some((item) => item.id === prevItem.id)
+    );
+
+    itemsToUnlock.forEach((item) => {
+      api.put(`/api/products/${item.id}/lock`, { lock: false, storeId: selectedStore })
+        .then(unlockedProduct => {
+          // The API now returns the fully populated product. We can use it directly.
+          setProducts(prev => prev.map(p => p.id === unlockedProduct.id ? unlockedProduct : p));
+        })
+        .catch(err => console.error(`Failed to unlock product ${item.id}`, err));
+    });
+  }, [orderItems, prevOrderItems, selectedStore]);
+
+  // Effect for unlocking any remaining items on component unmount (e.g., page navigation)
+  useEffect(() => {
+    return () => {
+      // Use a state getter to access the most recent state on unmount.
+      setOrderItems(currentOrderItems => {
+        currentOrderItems.forEach((item) => {
+          api.put(`/api/products/${item.id}/lock`, { lock: false, storeId: selectedStore })
+            .catch(err => console.error(`Failed to unlock product ${item.id} on unmount`, err));
+        });
+        return currentOrderItems; // Return state unchanged
+      });
+    };
+  }, [selectedStore]);
+
   // Fetch initial data
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
-        const fetchedCustomers = await fetchCustomers();
+        const fetchedCustomers = await api.get('/api/customers');
+        setCustomers(fetchedCustomers);
         
         if (fetchedCustomers) {
           const walkInCustomer = fetchedCustomers.find(c => c.name === 'Walk-in Customer');
-          if (walkInCustomer) {
-            setSelectedCustomer(walkInCustomer.id);
-          } else if (fetchedCustomers.length > 0) {
-            // Fallback to the first customer if walk-in not found
-            setSelectedCustomer(fetchedCustomers[0].id);
-          } else {
-            setError('No customers found. Please add a customer.');
-          }
+          setSelectedCustomer(walkInCustomer ? walkInCustomer.id : (fetchedCustomers[0]?.id || null));
         }
 
-        await fetchCategories();
-        const fetchedWarehouses = await fetchWarehouses();
-        if (fetchedWarehouses && fetchedWarehouses.length > 0) {
-          const initialWarehouseId = fetchedWarehouses[0].id;
-          setSelectedWarehouse(initialWarehouseId);
-          await fetchProducts(initialWarehouseId);
+        const fetchedCategories = await api.get('/api/categories');
+        setCategories(fetchedCategories);
+
+        const fetchedStores = await api.get('/api/stores');
+        setStores(fetchedStores);
+        if (fetchedStores && fetchedStores.length > 0) {
+          const initialStoreId = fetchedStores[0].id;
+          setSelectedStore(initialStoreId);
+          // Initial fetch is handled by the store change effect
         } else {
-          setError('No warehouses found. Please add a warehouse.');
+          setError('No stores found. Please add a store.');
         }
       } catch (err) {
         setError('Failed to load initial data.');
@@ -65,121 +117,71 @@ export default function POS() {
       }
     };
     fetchInitialData();
-  }, []);
+  }, []); // Removed fetchProducts from dependency array
 
-  // Re-fetch products when warehouse changes
+  // Re-fetch products when store changes
   useEffect(() => {
-    if (selectedWarehouse) {
-      fetchProducts(selectedWarehouse);
+    if (selectedStore) {
+      fetchProducts(selectedStore);
     }
-  }, [selectedWarehouse]);
-
-
-  const fetchProducts = async (warehouseId) => {
-    if (!warehouseId) return;
-    try {
-      setLoading(true);
-      const data = await api.get(`/api/products/pos?warehouseId=${warehouseId}`);
-      setProducts(data);
-    } catch (err) {
-      setError('Failed to fetch products for the selected warehouse');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCustomers = async () => {
-    try {
-      const data = await api.get('/api/customers');
-      setCustomers(data);
-      return data; // Return data for chaining
-    } catch (err) {
-      console.error('Failed to fetch customers:', err);
-      return null; // Return null on error
-    }
-  };
-
-  const fetchWarehouses = async () => {
-    try {
-      const data = await api.get('/api/warehouses');
-      setWarehouses(data);
-      return data; // Return data for chaining
-    } catch (err) {
-      console.error('Failed to fetch warehouses:', err);
-      setError('Failed to load warehouses');
-      return null; // Return null on error
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const data = await api.get('/api/categories');
-      setCategories(data);
-    } catch (err) {
-      console.error('Failed to fetch categories:', err);
-    }
-  };
+  }, [selectedStore, fetchProducts]);
 
   const filteredProducts = products
     .filter(product => activeCategory === 'all' || product.category === activeCategory)
     .filter(product => product.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  function addQuantity(item) {
-    const product = products.find(p => p.id === item.id);
-    if (product) {
-      addToOrder(product);
-    }
-  }
-
-  // Update the addToOrder function
-  function addToOrder(product) {
-    // Check if product has variants
-    if (!product.ProductVariants || product.ProductVariants.length === 0) {
-      setError(`No variants available for ${product.name}. Please add a variant in the product management.`);
+  const addToOrder = useCallback(async (product) => {
+    if (orderItems.some(item => item.id === product.id)) {
+      setError(`"${product.name}" is already in the cart. Use the "+" button to increase quantity.`);
       return;
     }
 
-    // Use the first variant for now
-    const variant = product.ProductVariants[0];
-    
-    // The backend now sends the correct qty for the selected warehouse
-    const availableQty = variant.Inventories[0]?.qty || 0;
+    try {
+      // The backend now returns the fully populated product on success
+      const lockedProduct = await api.put(`/api/products/${product.id}/lock`, { 
+        lock: true, 
+        storeId: selectedStore 
+      });
 
-    if (availableQty <= 0) {
-      setError(`Insufficient stock for ${product.name}`);
-      return;
-    }
-
-    setOrderItems(prev => {
-      const exist = prev.find((item) => item.id === product.id && item.variantId === variant.id);
-      if (exist) {
-        if (exist.quantity + 1 > availableQty) {
-          setError(`Only ${availableQty} units available for ${product.name}`);
-          return prev;
-        }
-        return prev.map((item) => 
-          item.id === product.id && item.variantId === variant.id 
-            ? { ...item, quantity: item.quantity + 1 } 
-            : item
-        );
-      } else {
-        if (1 > availableQty) {
-          setError(`Only ${availableQty} units available for ${product.name}`);
-          return prev;
-        }
-        return [...prev, { 
-          ...product, 
-          variantId: variant.id,
-          quantity: 1,
-          unitPrice: variant.price,
-          price: variant.price // Keep for UI compatibility
-        }];
+      const variant = lockedProduct.ProductVariants?.[0];
+      if (!variant) {
+        throw new Error(`No variants available for ${lockedProduct.name}.`);
       }
-    });
+      
+      if (variant.qty <= 0) {
+        // If no stock, we must release the lock we just acquired.
+        await api.put(`/api/products/${lockedProduct.id}/lock`, { lock: false, storeId: selectedStore });
+        throw new Error(`Insufficient stock for ${lockedProduct.name}`);
+      }
+      
+      // The lock was successful, update the UI with the rich data from the server
+      setProducts(prevProducts => prevProducts.map(p => 
+        p.id === lockedProduct.id ? lockedProduct : p
+      ));
+
+      // Add to cart
+      setOrderItems(prev => [...prev, { 
+        ...lockedProduct,
+        quantity: 1,
+        variantId: variant.id,
+        unitPrice: variant.price,
+        price: variant.price
+      }]);
+
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || `Error adding "${product.name}"`;
+      setError(errorMessage);
+      // NOTE: We no longer fetch all products here, as it was the source of the flicker.
+      // The error message should be enough feedback for the user.
+    }
+  }, [orderItems, selectedStore]);
+
+  function addQuantity(item) {
+    setOrderItems(prev => prev.map(i => 
+      i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+    ));
   }
 
-  // Update the removeQuantity function
   function removeQuantity(item) {
     setOrderItems(orderItems.map((newItem) => 
       newItem.id === item.id ? { ...newItem, quantity: newItem.quantity - 1 } : newItem
@@ -187,73 +189,52 @@ export default function POS() {
   }
 
   function clearAll() {
-    const walkInCustomer = customers.find(c => c.name === 'Walk-in Customer');
-    if (walkInCustomer) {
-      setSelectedCustomer(walkInCustomer.id);
-    }
-    setSearchTerm('');
-    setActiveCategory('all');
     setOrderItems([]);
     setError(null);
     setDiscount(0.00);
   }
 
-  // Update the processOrder function to include warehouse
   const processOrder = async (paymentData) => {
     try {
-      // Validate warehouse selection
-      if (!selectedWarehouse) {
-        throw new Error('Warehouse selection is required');
+      if (!selectedStore || !selectedCustomer) {
+        throw new Error('Store and Customer must be selected');
       }
 
-      // Get the actual customer ID (not the string 'walk-in')
-      const customerId = selectedCustomer;
-
-      if (!customerId) {
-        throw new Error('No valid customer selected');
-      }
-
-      // Prepare order data matching Sale model structure
       const orderData = {
-        reference: `POS-${Date.now()}`,
-        date: new Date().toISOString().split('T')[0],
-        status: 'Completed',
-        payment_status: 'Paid',
-        payment_method: paymentData.method,
-        subtotal: subtotal,
-        discount: discount,
-        tax: tax,
-        shipping: 0,
-        total: total,
-        paid: paymentData.amountTendered,
-        due: 0,
-        note: paymentData.saleNote || '',
-        customerId: customerId,
-        userId: currentUser?.id,
-        warehouseId: parseInt(selectedWarehouse), // Use selectedWarehouse from state
+        ...paymentData,
         orderItems: orderItems.map(item => ({
           productId: item.id,
           variantId: item.variantId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          total: item.unitPrice * item.quantity
-        }))
+          total: item.price * item.quantity,
+        })),
+        customerId: selectedCustomer,
+        storeId: selectedStore,
+        subtotal: subtotal,
+        discount: discount,
+        tax: tax,
+        total: total,
       };
 
       const result = await api.post('/api/sales', orderData);
       
-      // Re-fetch products to get updated quantities
-      await fetchProducts(selectedWarehouse);
-
+      // On successful order, the useEffect will handle unlocking as orderItems is cleared.
       setShowReceipt(true);
       return result;
     } catch (err) {
-      setError(err.message || 'Failed to process order');
+      setError(err.response?.data?.error || err.message || 'Failed to process order');
+      // If order fails, items remain in cart and remain locked by user.
       throw err;
     }
   };
 
   if (loading) return <div className="p-6">Loading products...</div>;
+
+  const isProductLocked = (product) => {
+    const twoMinutes = 2 * 60 * 1000;
+    return product.isLocked && (new Date() - new Date(product.lockedAt)) < twoMinutes;
+  }
 
   return (
     <div className="h-full overflow-auto flex-1 bg-gradient-to-br from-slate-50 to-blue-50 p-4">
@@ -270,25 +251,25 @@ export default function POS() {
         {/* Order Section - Left Side */}
         <div className="w-full lg:w-[27.5%] h-full bg-white rounded-2xl border border-gray-800 shadow-lg flex flex-col">
             <div className="p-6 flex flex-col flex-1 overflow-hidden min-h-0">
-              {/* Warehouse Selection */}
+              {/* Store Selection */}
               <div className="mb-6">
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <h2 className="font-semibold text-gray-700">Warehouse</h2>
+                  <h2 className="font-semibold text-gray-700">Store</h2>
                 </div>
                 <select
                   className="select select-bordered w-full bg-white rounded-xl p-2 border border-gray-400"
-                  value={selectedWarehouse}
-                  onChange={(e) => setSelectedWarehouse(e.target.value)}
-                  disabled={warehouses.length === 0}
+                  value={selectedStore}
+                  onChange={(e) => setSelectedStore(e.target.value)}
+                  disabled={stores.length === 0}
                 >
-                  {warehouses.length > 0 ? (
-                    warehouses.map((warehouse) => (
-                      <option key={warehouse.id} value={warehouse.id}>
-                        {warehouse.name}
+                  {stores.length > 0 ? (
+                    stores.map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
                       </option>
                     ))
                   ) : (
-                    <option disabled>No warehouses available</option>
+                    <option disabled>No stores available</option>
                   )}
                 </select>
               </div>
@@ -493,7 +474,9 @@ export default function POS() {
               {/* Products Grid */}
               <div className="flex-1 overflow-y-auto">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 relative">
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product) => {
+                    const locked = isProductLocked(product);
+                    return (
                     <div
                       key={product.id}
                       className="flex flex-col p-0 rounded-xl bg-white border border-gray-400 hover:shadow transition-all overflow-hidden"
@@ -529,16 +512,18 @@ export default function POS() {
                       </div>
                       {/* Add Button */}
                         <div className="my-2">
-                          <button onClick={() => addToOrder(product)} className="w-full flex justify-center items-center py-1.5 bg-black text-white text-sm rounded-lg shadow">
+                          <button onClick={() => addToOrder(product)} 
+                            className={`w-full flex justify-center items-center py-1.5 text-white text-sm rounded-lg shadow ${locked ? 'bg-gray-400 cursor-not-allowed' : 'bg-black'}`}
+                            disabled={locked}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
-                            Add
+                            {locked ? 'Locked' : 'Add'}
                           </button>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
             </div>

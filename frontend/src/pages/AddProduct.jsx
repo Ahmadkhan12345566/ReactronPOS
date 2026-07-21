@@ -5,8 +5,8 @@ import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
 import SubcategoryModal from '../components/forms/SubcategoryModal';
 import SupplierModal from '../components/forms/SupplierModal'; 
-import WarehouseModal from '../components/forms/WarehouseModal';
-import { usePos } from '../context/PosContext';
+import StoreModal from '../components/forms/StoreModal';
+import { usePos } from '../hooks/usePos';
 import { api } from '../services/api';
 import {
   ArrowLeftIcon,
@@ -21,14 +21,15 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AddProduct = () => {
-  const [showWarehouseModal, setShowWarehouseModal] = useState(false);
+  const [showStoreModal, setShowStoreModal] = useState(false);
   const [showSubcategoryModal, setShowSubcategoryModal] = useState(false); 
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [units, setUnits] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
+  const [stores, setStores] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [accordion, setAccordion] = useState({
     productInfo: true,
@@ -50,18 +51,18 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [catsResponse, brandsResponse, unitsResponse, warehousesResponse, subCatsResponse, suppliersResponse] = await Promise.all([
+        const [catsResponse, brandsResponse, unitsResponse, storesResponse, subCatsResponse, suppliersResponse] = await Promise.all([
           api.get('/api/categories'),
           api.get('/api/brands'),
           api.get('/api/units'),
-          api.get('/api/warehouses'),
+          api.get('/api/stores'),
           api.get('/api/sub-categories'),
           api.get('/api/suppliers')
         ]);
         setCategories(catsResponse);
         setBrands(brandsResponse);
         setUnits(unitsResponse);
-        setWarehouses(warehousesResponse);
+        setStores(storesResponse);
         setSubCategories(subCatsResponse);
         setSuppliers(suppliersResponse);
       } catch (error) {
@@ -83,9 +84,9 @@ const AddProduct = () => {
     setSubCategories(prevSubCategories => [...prevSubCategories, newSubcategory]);
     setShowSubcategoryModal(false);
   };
-  const handleWarehouseCreated = (newWarehouse) => {
-    setWarehouses(prevWarehouses => [...prevWarehouses, newWarehouse]);
-    setShowWarehouseModal(false);
+  const handleStoreCreated = (newStore) => {
+    setStores(prevStores => [...prevStores, newStore]);
+    setShowStoreModal(false);
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -116,7 +117,7 @@ const AddProduct = () => {
           expiryDate: data.expiryDate || null,
           manufacturedDate: data.manufacturedDate || null,
           inventories: [{
-            warehouseId: data.warehouseId,
+            storeId: data.storeId,
             qty: parseInt(data.quantity) || 0,
             quantityAlert: parseInt(data.quantityAlert) || 0
           }]
@@ -136,7 +137,7 @@ const AddProduct = () => {
             expiryDate: data.expiryDate || null,
             manufacturedDate: data.manufacturedDate || null,
             inventories: [{
-              warehouseId: data.warehouseId,
+              storeId: data.storeId,
               qty: parseInt(data[`variantQuantity${index}`]) || 0,
               quantityAlert: parseInt(data.quantityAlert) || 0
             }]
@@ -171,7 +172,7 @@ const AddProduct = () => {
         productData.sku = data.sku;
         productData.price = data.price;
         productData.quantity = data.quantity;
-        productData.warehouseId = data.warehouseId;
+        productData.storeId = data.storeId;
         productData.itemBarcode = data.itemBarcode;
         productData.quantityAlert = data.quantityAlert;
       }
@@ -249,11 +250,11 @@ const AddProduct = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Warehouse <span className="text-red-500">*</span>
+                    Store <span className="text-red-500">*</span>
                   </label>
                   <button 
                   type="button" 
-                  onClick={() => setShowWarehouseModal(true)}
+                  onClick={() => setShowStoreModal(true)}
                   className="flex items-center text-black text-sm"
                 >
                   <PlusCircleIcon className="w-4 h-4 mr-1" />
@@ -261,13 +262,13 @@ const AddProduct = () => {
                 </button>
               </div>
                 <select 
-                  name="warehouseId" 
+                  name="storeId" 
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
                   <option value="">Select</option>
-                  {warehouses.map(warehouse => (
-                    <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
+                  {stores.map(store => (
+                    <option key={store.id} value={store.id}>{store.name}</option>
                   ))}
                 </select>
               </div>
@@ -359,7 +360,11 @@ const AddProduct = () => {
                   <label className="block text-sm font-medium text-gray-700">
                     Category <span className="text-red-500">*</span>
                   </label>
-                  <button type="button" onClick={()=>window.location.replace("/#/categories/add")} className="flex items-center text-black text-sm">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/add-category')}
+                    className="flex items-center text-black text-sm"
+                  >
                     <PlusCircleIcon className="w-4 h-4 mr-1" />
                     Add New
                   </button>
@@ -870,12 +875,13 @@ const AddProduct = () => {
         <FormFooter 
           cancelPath="/products" 
           submitLabel="Add Product" 
+          disabled={!isAdmin}
         />
       </form>
-      <WarehouseModal 
-        showModal={showWarehouseModal}
-        setShowModal={setShowWarehouseModal}
-        onWarehouseCreated={handleWarehouseCreated}
+      <StoreModal 
+        showModal={showStoreModal}
+        setShowModal={setShowStoreModal}
+        onStoreCreated={handleStoreCreated}
       />
 
       <SubcategoryModal 

@@ -1,32 +1,34 @@
 import express from 'express';
-import { models } from '../models/index.js';
+import { Warehouse } from '../models/index.js';
+import { toObjectWithId, toObjectsWithId } from '../utils/transform.js';
+import { authenticateToken } from '../middleware/auth.js';
+import isAdmin from '../middleware/admin.js';
 
 const router = express.Router();
 
-// Get all warehouses
-router.get('/', async (req, res) => {
+// Get all active warehouses
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const warehouses = await models.Warehouse.findAll({
-      where: { status: 'Active' }
-    });
-    res.json(warehouses);
+    const warehouses = await Warehouse.findAll({ where: { status: 'Active' } });
+    res.json(toObjectsWithId(warehouses));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Create a new warehouse
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { name, address, status } = req.body;
     
-    const warehouse = await models.Warehouse.create({
+    const warehouse = await Warehouse.create({
       name,
       address,
-      status: status || 'Active'
+      status: status || 'Active',
+      createdBy: Number(req.user.userId),
     });
     
-    res.status(201).json(warehouse);
+    res.status(201).json(toObjectWithId(warehouse));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

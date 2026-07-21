@@ -15,7 +15,7 @@ import {
 } from '../ListComponents/columnHelpers';
 import { useUI } from '../ListComponents/useUI';
 
-export default function SalesList({ sales = [], onRefresh }) {
+export default function SalesList({ sales = [], onRefresh, onAddItem }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
@@ -85,7 +85,7 @@ export default function SalesList({ sales = [], onRefresh }) {
       size: 140,
       cell: ({ getValue }) => getValue() || 'Unknown'
     },
-    actionsColumn(['view', 'edit', 'delete'], 80)
+    actionsColumn(['view'])
   ], []);
 
   // Corrected filteredData (use `sales` prop and handle possible field-name variants)
@@ -126,8 +126,8 @@ export default function SalesList({ sales = [], onRefresh }) {
     columns,
     rowSelection,
     setRowSelection,
-    onAddItem: () => console.log('Add sale'),
-    onSortToggle: () => console.log('Collapse clicked'),
+    onAddItem: onAddItem,
+    onRefresh,
     resetFilters: () => {
       setSearch('');
       setStatusFilter('All');

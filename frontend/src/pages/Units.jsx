@@ -17,9 +17,10 @@ export default function Units() {
     try {
       setLoading(true);
       const data = await api.get('/api/units');
-      
+      const unitRows = Array.isArray(data) ? data : [];
+
       // Format dates for display
-      const formattedData = data.map(unit => ({
+      const formattedData = unitRows.map(unit => ({
         ...unit,
         createdAt: new Date(unit.createdAt).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -29,11 +30,7 @@ export default function Units() {
       }));
       
       setUnits(formattedData);
-      if (data.length === 0) {
-        setError('No units found');  
-      } else {
-        setError(null);
-      }
+      setError(null);
     } catch (err) {
       setError('Failed to fetch units');
       console.error(err);
@@ -49,7 +46,8 @@ export default function Units() {
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <UnitList 
         units={units || []} 
-        setShowForm={() => navigate('/units/add')} 
+        setShowForm={() => navigate('/add-unit')}
+        onRefresh={fetchUnits}
       />
     </div>
   );

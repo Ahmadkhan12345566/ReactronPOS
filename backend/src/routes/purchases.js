@@ -1,43 +1,42 @@
 import express from 'express';
-import { models, sequelize } from '../models/index.js';
+import sequelize from '../config/database.js';
+import { Purchase, PurchaseItem, Inventory, Supplier, Product } from '../models/index.js';
+import { toObjectWithId, toObjectsWithId } from '../utils/transform.js';
+import { authenticateToken } from '../middleware/auth.js';
+import isAdmin from '../middleware/admin.js';
+import { isValidId } from '../utils/validation.js';
 
 const router = express.Router();
 
-// Get all purchases with supplier information
-router.get('/', async (req, res) => {
+// Get all purchases with supplier and item information
+router.get('/', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const purchases = await models.Purchase.findAll({
+    const purchases = await Purchase.findAll({
       include: [
+        { model: Supplier, as: 'supplier', attributes: ['id', 'name', 'email', 'phone'] },
         {
-          model: models.Supplier,
-          attributes: ['id', 'name', 'email', 'phone']
+          model: PurchaseItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name'] }],
         },
-        {
-          model: models.PurchaseItem,
-          include: [
-            {
-              model: models.Product,
-              attributes: ['id', 'name']
-            }
-          ]
-        }
-      ]
+      ],
+      order: [['date', 'DESC']],
     });
-    res.json(purchases);
+    res.json(toObjectsWithId(purchases));
   } catch (error) {
+    console.error('GET /purchases error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // Create a new purchase with inventory updates
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, isAdmin, async (req, res) => {
   const transaction = await sequelize.transaction();
-  
+
   try {
     const { reference, date, status, payment_status, total, paid, due, supplierId, purchaseItems } = req.body;
-    
-    // Create purchase
-    const purchase = await models.Purchase.create({
+
+    const purchaseData = {
       reference,
       date: date || new Date(),
       status,
@@ -45,45 +44,42 @@ router.post('/', async (req, res) => {
       total: parseFloat(total) || 0,
       paid: parseFloat(paid) || 0,
       due: parseFloat(due) || 0,
-      supplierId: parseInt(supplierId)
-    }, { transaction });
+      supplierId: supplierId ? Number(supplierId) : null,
+      createdBy: Number(req.user.userId),
+    };
+    const purchase = await Purchase.create(purchaseData, { transaction });
 
-    // Create purchase items and update inventory
     if (Array.isArray(purchaseItems) && purchaseItems.length > 0) {
       for (const item of purchaseItems) {
-        // Create purchase item
-        await models.PurchaseItem.create({
+        const quantity = Number(item.quantity);
+        const unitPrice = Number(item.unitPrice);
+        const subtotal = Number(item.subtotal);
+        await PurchaseItem.create({
           purchaseId: purchase.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal
+          productId: Number(item.productId),
+          quantity,
+          unitPrice,
+          subtotal: Number.isFinite(subtotal) ? subtotal : unitPrice * quantity,
         }, { transaction });
 
-        // Update inventory
-        if (item.variantId && item.warehouseId) {
-          // Check if inventory record exists
-          let inventory = await models.Inventory.findOne({
-            where: { 
-              variantId: item.variantId,
-              warehouseId: item.warehouseId
-            },
-            transaction
+        if (item.variantId && item.storeId) {
+          if (!isValidId(item.variantId) || !isValidId(item.storeId)) {
+            throw new Error('Valid variantId and storeId are required for inventory.');
+          }
+
+          const inventory = await Inventory.findOne({
+            where: { variantId: Number(item.variantId), storeId: Number(item.storeId) },
+            transaction,
           });
 
           if (inventory) {
-            // Update existing inventory
-            await inventory.increment('qty', { 
-              by: item.quantity,
-              transaction
-            });
+            await inventory.increment('qty', { by: Number(item.quantity), transaction });
           } else {
-            // Create new inventory record
-            await models.Inventory.create({
-              variantId: item.variantId,
-              warehouseId: item.warehouseId,
-              qty: item.quantity,
-              quantityAlert: 0
+            await Inventory.create({
+              variantId: Number(item.variantId),
+              storeId: Number(item.storeId),
+              qty: Number(item.quantity),
+              quantityAlert: 0,
             }, { transaction });
           }
         }
@@ -92,26 +88,18 @@ router.post('/', async (req, res) => {
 
     await transaction.commit();
 
-    // Return created purchase with related data
-    const createdPurchase = await models.Purchase.findByPk(purchase.id, {
+    const createdPurchase = await Purchase.findByPk(purchase.id, {
       include: [
+        { model: Supplier, as: 'supplier', attributes: ['id', 'name', 'email', 'phone'] },
         {
-          model: models.Supplier,
-          attributes: ['id', 'name', 'email', 'phone']
+          model: PurchaseItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name'] }],
         },
-        {
-          model: models.PurchaseItem,
-          include: [
-            {
-              model: models.Product,
-              attributes: ['id', 'name']
-            }
-          ]
-        }
-      ]
+      ],
     });
 
-    res.status(201).json(createdPurchase);
+    res.status(201).json(toObjectWithId(createdPurchase));
   } catch (error) {
     await transaction.rollback();
     console.error('POST /purchases error:', error);

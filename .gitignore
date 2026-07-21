@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
 
 # Editor directories and files
 .vscode/*
@@ -22,17 +23,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-# Environment variables & secrets
-.env
-.env.*
-
-# User uploads / runtime assets
-backend/uploads/*
-!backend/uploads/.gitkeep
-
-# Windows OS thumbnails
-Thumbs.db
-
-# Local database files (if any legacy SQLite files exist)
-*.sqlite
-*.sqlite3

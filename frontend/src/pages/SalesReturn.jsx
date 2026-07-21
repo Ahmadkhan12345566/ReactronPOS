@@ -6,7 +6,7 @@ export default function SalesReturn() {
   const [salesReturns, setSalesReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [, setShowForm] = useState(false);
 
   useEffect(() => {
     fetchSalesReturns();

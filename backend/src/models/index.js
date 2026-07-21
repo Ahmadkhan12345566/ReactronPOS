@@ -1,111 +1,110 @@
-// Update models/index.js to include all models
-import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
+import Brand from './brand.js';
+import Category from './category.js';
+import Customer from './customer.js';
+import Inventory from './inventory.js';
+import OrderItem from './orderItem.js';
+import Product from './product.js';
+import ProductVariant from './productVariant.js';
+import Purchase from './purchase.js';
+import PurchaseItem from './purchaseItem.js';
+import Report from './report.js';
+import ReturnItem from './returnItems.js';
+import Sale from './sale.js';
+import SaleReturn from './saleReturn.js';
+import SubCategory from './subCategory.js';
+import Supplier from './supplier.js';
+import Unit from './unit.js';
+import User from './user.js';
+import Store from './store.js';
+import Warehouse from './warehouse.js';
 
-dotenv.config();
+Brand.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+User.hasMany(Brand, { as: 'brands', foreignKey: 'createdBy' });
 
-const {
-  DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME, NODE_ENV
-} = process.env;
+Category.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+User.hasMany(Category, { as: 'categories', foreignKey: 'createdBy' });
 
-const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASS, {
-  host: DB_HOST,
-  port: DB_PORT ? Number(DB_PORT) : 3306,
-  dialect: 'mysql',
-  logging: NODE_ENV === 'development' ? console.log : false,
-  pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
-  },
-  define: {
-    underscored: true,
-    freezeTableName: false,
-    timestamps: true
-  }
-});
+Customer.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+User.hasMany(Customer, { as: 'customers', foreignKey: 'createdBy' });
 
-export async function testConnection() {
-  try {
-    await sequelize.authenticate();
-    console.log('DB connected.');
-  } catch (err) {
-    console.error('Unable to connect to DB:', err);
-    throw err;
-  }
-}
+Supplier.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+User.hasMany(Supplier, { as: 'suppliers', foreignKey: 'createdBy' });
 
-// Import all models
-import UserModel from './user.js';
-import CustomerModel from './customer.js';
-import ProductModel from './product.js';
-import CategoryModel from './category.js';
-import BrandModel from './brand.js';
-import SupplierModel from './supplier.js';
-import UnitModel from './unit.js';
-import SaleModel from './sale.js';
-import PurchaseModel from './purchase.js';
-import SaleReturnModel from './saleReturn.js';
-// import BillerModel from './biller.js';
-import OrderItemModel from './orderItem.js';
-import PurchaseItemModel from './purchaseItem.js';
-import ReturnItemModel from './returnItems.js';
-import ReportModel from './report.js';
-import SubCategoryModel from './subCategory.js';
-import ProductVariantModel from './productVariant.js';
-import WarehouseModel from './warehouse.js';
-import InventoryModel from './inventory.js';
+Unit.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+User.hasMany(Unit, { as: 'units', foreignKey: 'createdBy' });
 
-// Initialize models
-const models = {
-  User: UserModel(sequelize, Sequelize.DataTypes),
-  Customer: CustomerModel(sequelize, Sequelize.DataTypes),
-  Product: ProductModel(sequelize, Sequelize.DataTypes),
-  Category: CategoryModel(sequelize, Sequelize.DataTypes),
-  Brand: BrandModel(sequelize, Sequelize.DataTypes),
-  Supplier: SupplierModel(sequelize, Sequelize.DataTypes),
-  Unit: UnitModel(sequelize, Sequelize.DataTypes),
-  Sale: SaleModel(sequelize, Sequelize.DataTypes),
-  Purchase: PurchaseModel(sequelize, Sequelize.DataTypes),
-  SaleReturn: SaleReturnModel(sequelize, Sequelize.DataTypes),
-  // Biller: BillerModel(sequelize, Sequelize.DataTypes),
-  OrderItem: OrderItemModel(sequelize, Sequelize.DataTypes),
-  PurchaseItem: PurchaseItemModel(sequelize, Sequelize.DataTypes),
-  ReturnItem: ReturnItemModel(sequelize, Sequelize.DataTypes),
-  Report: ReportModel(sequelize, Sequelize.DataTypes),
-  SubCategory: SubCategoryModel(sequelize, Sequelize.DataTypes),
-  ProductVariant: ProductVariantModel(sequelize, Sequelize.DataTypes),
-  Warehouse: WarehouseModel(sequelize, Sequelize.DataTypes),
-  Inventory: InventoryModel(sequelize, Sequelize.DataTypes)
-};
+Store.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+User.hasMany(Store, { as: 'stores', foreignKey: 'createdBy' });
 
-// Set up associations
-Object.values(models).forEach((model) => {
-  if (typeof model.associate === 'function') {
-    model.associate(models);
-  }
-});
+Warehouse.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+User.hasMany(Warehouse, { as: 'warehouses', foreignKey: 'createdBy' });
 
-// Export everything
-export { sequelize, Sequelize, models };
-export const {
-  User,
-  Customer,
-  Product,
-  Category,
+SubCategory.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });
+Category.hasMany(SubCategory, { as: 'subCategories', foreignKey: 'categoryId' });
+SubCategory.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+User.hasMany(SubCategory, { as: 'subCategories', foreignKey: 'createdBy' });
+
+Product.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });
+Product.belongsTo(SubCategory, { as: 'subCategory', foreignKey: 'subCategoryId' });
+Product.belongsTo(Brand, { as: 'brand', foreignKey: 'brandId' });
+Product.belongsTo(Unit, { as: 'unit', foreignKey: 'unitId' });
+Product.belongsTo(Supplier, { as: 'supplier', foreignKey: 'supplierId' });
+Product.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+Product.belongsTo(User, { as: 'lockedByUser', foreignKey: 'lockedBy' });
+Product.hasMany(ProductVariant, { as: 'ProductVariants', foreignKey: 'productId' });
+
+ProductVariant.belongsTo(Product, { as: 'product', foreignKey: 'productId' });
+ProductVariant.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+ProductVariant.hasMany(Inventory, { as: 'inventories', foreignKey: 'variantId' });
+
+Inventory.belongsTo(ProductVariant, { as: 'variant', foreignKey: 'variantId' });
+Inventory.belongsTo(Store, { as: 'store', foreignKey: 'storeId' });
+Store.hasMany(Inventory, { as: 'inventories', foreignKey: 'storeId' });
+
+Sale.belongsTo(Customer, { as: 'customer', foreignKey: 'customerId' });
+Sale.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+Sale.belongsTo(Store, { as: 'store', foreignKey: 'storeId' });
+Sale.hasMany(OrderItem, { as: 'items', foreignKey: 'saleId' });
+
+OrderItem.belongsTo(Sale, { as: 'sale', foreignKey: 'saleId' });
+OrderItem.belongsTo(Product, { as: 'product', foreignKey: 'productId' });
+OrderItem.belongsTo(ProductVariant, { as: 'variant', foreignKey: 'variantId' });
+
+Purchase.belongsTo(Supplier, { as: 'supplier', foreignKey: 'supplierId' });
+Purchase.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+Purchase.hasMany(PurchaseItem, { as: 'items', foreignKey: 'purchaseId' });
+
+PurchaseItem.belongsTo(Purchase, { as: 'purchase', foreignKey: 'purchaseId' });
+PurchaseItem.belongsTo(Product, { as: 'product', foreignKey: 'productId' });
+
+SaleReturn.belongsTo(Customer, { as: 'customer', foreignKey: 'customerId' });
+SaleReturn.belongsTo(Sale, { as: 'sale', foreignKey: 'saleId' });
+SaleReturn.belongsTo(Store, { as: 'store', foreignKey: 'storeId' });
+SaleReturn.belongsTo(User, { as: 'createdByUser', foreignKey: 'createdBy' });
+SaleReturn.hasMany(ReturnItem, { as: 'items', foreignKey: 'saleReturnId' });
+
+ReturnItem.belongsTo(SaleReturn, { as: 'saleReturn', foreignKey: 'saleReturnId' });
+ReturnItem.belongsTo(Product, { as: 'product', foreignKey: 'productId' });
+ReturnItem.belongsTo(ProductVariant, { as: 'variant', foreignKey: 'variantId' });
+
+export {
   Brand,
+  Category,
+  Customer,
+  Inventory,
+  OrderItem,
+  Product,
+  ProductVariant,
+  Purchase,
+  PurchaseItem,
+  Report,
+  ReturnItem,
+  Sale,
+  SaleReturn,
+  SubCategory,
   Supplier,
   Unit,
-  Sale,
-  Purchase,
-  SaleReturn,
-  // Biller,
-  OrderItem,
-  PurchaseItem,
-  ReturnItem,
-  Report,
-  SubCategory,
-  ProductVariant,
+  User,
+  Store,
   Warehouse,
-} = models;
+};

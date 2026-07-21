@@ -1,45 +1,107 @@
 import express from 'express';
-import { models } from '../models/index.js';
-import { sequelize } from '../models/index.js';
+import sequelize from '../config/database.js';
+import { toObjectWithId } from '../utils/transform.js';
+import { SaleReturn, ReturnItem, Inventory, Customer, Product, ProductVariant, OrderItem } from '../models/index.js';
+import { authenticateToken } from '../middleware/auth.js';
+import isAdmin from '../middleware/admin.js';
+import { isValidId } from '../utils/validation.js';
 
 const router = express.Router();
 
-// GET /sales-returns - get all sales returns with customer and product info
-router.get('/', async (req, res) => {
+const resolveReturnVariantId = async (item, saleId, transaction) => {
+  if (isValidId(item.variantId)) {
+    return Number(item.variantId);
+  }
+  if (!isValidId(item.productId)) {
+    throw new Error('Valid productId is required for each return item.');
+  }
+
+  if (isValidId(saleId)) {
+    const saleItems = await OrderItem.findAll({
+      where: { saleId: Number(saleId), productId: Number(item.productId) },
+      attributes: ['variantId'],
+      transaction,
+    });
+    const variants = [
+      ...new Set(saleItems.map(saleItem => saleItem.variantId).filter(Boolean).map(Number)),
+    ];
+    if (variants.length === 1) {
+      return variants[0];
+    }
+    if (variants.length > 1) {
+      throw new Error(`Return item for product ${item.productId} must include variantId because multiple variants were sold.`);
+    }
+  }
+
+  const productVariants = await ProductVariant.findAll({
+    where: { productId: Number(item.productId) },
+    attributes: ['id'],
+    transaction,
+  });
+  if (productVariants.length === 1) {
+    return productVariants[0].id;
+  }
+
+  throw new Error(`Return item for product ${item.productId} must include variantId.`);
+};
+
+const updateInventoryOnReturn = async (variantId, quantity, storeId, transaction) => {
+  if (!isValidId(variantId)) {
+    throw new Error('Valid variantId is required to update inventory.');
+  }
+
+  const inventory = await Inventory.findOne({
+    where: { variantId: Number(variantId), storeId: Number(storeId) },
+    transaction,
+  });
+
+  if (inventory) {
+    await inventory.increment('qty', { by: Number(quantity), transaction });
+  } else {
+    await Inventory.create({
+      variantId: Number(variantId),
+      storeId: Number(storeId),
+      qty: Number(quantity),
+      quantityAlert: 0,
+    }, { transaction });
+  }
+};
+
+// GET /sales-returns - get all sales returns
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const salesReturns = await models.SaleReturn.findAll({
+    const salesReturns = await SaleReturn.findAll({
       include: [
-        { 
-          model: models.Customer,
-          attributes: ['id', 'name', 'email', 'phone', 'image']
-        },
+        { model: Customer, as: 'customer', attributes: ['id', 'name', 'email', 'phone', 'image'] },
         {
-          model: models.ReturnItem,
-          include: [models.Product]
-        }
+          model: ReturnItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'image'] }],
+        },
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
     });
 
-    // Transform data to match frontend expectations
-    const transformedReturns = salesReturns.map(returnItem => {
-      const firstProduct = returnItem.ReturnItems[0]?.Product;
-      
+    const transformedReturns = salesReturns.map(returnDoc => {
+      const returnData = toObjectWithId(returnDoc);
+      const firstItem = returnData.items && returnData.items[0];
+      const firstProduct = firstItem ? firstItem.product : null;
+
       return {
-        id: returnItem.id,
-        date: returnItem.date,
-        status: returnItem.status,
-        total: returnItem.total,
-        paid: returnItem.paid,
-        due: returnItem.due,
-        paymentStatus: returnItem.payment_status,
-        customer: {
-          id: returnItem.Customer.id,
-          name: returnItem.Customer.name,
-          email: returnItem.Customer.email,
-          phone: returnItem.Customer.phone,
-          avatar: returnItem.Customer.image
-        },
+        id: returnData.id,
+        date: returnData.date,
+        status: returnData.status,
+        total: returnData.total,
+        paid: returnData.paid,
+        due: returnData.due,
+        paymentStatus: returnData.payment_status,
+        customer: returnData.customer ? {
+          id: returnData.customer.id,
+          name: returnData.customer.name,
+          email: returnData.customer.email,
+          phone: returnData.customer.phone,
+          avatar: returnData.customer.image
+        } : null,
         product: firstProduct ? {
           id: firstProduct.id,
           name: firstProduct.name,
@@ -56,108 +118,71 @@ router.get('/', async (req, res) => {
 });
 
 // POST /sales-returns - create a new sales return and update inventory
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, isAdmin, async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { 
-      customerId, 
-      saleId, 
-      date, 
-      status, 
-      total, 
-      paid, 
-      due, 
-      payment_status, 
-      returnItems,
-      warehouseId // <-- GET THE WAREHOUSE ID FROM THE REQUEST
-    } = req.body;
+    const { returnItems, storeId, customerId, saleId, sale, ...saleReturnData } = req.body;
+    const saleRef = saleId || sale;
 
-    if (!warehouseId) {
-      throw new Error('Warehouse ID is required for a sales return.');
+    if (!storeId || !customerId || !saleRef || !Array.isArray(returnItems) || returnItems.length === 0) {
+      throw new Error('Store, customer, sale, and at least one return item are required.');
     }
 
-    // Create the SaleReturn entry
-    const salesReturn = await models.SaleReturn.create({
-      customerId,
-      saleId,
-      date: date || new Date(),
-      status: status || 'Pending',
-      total,
-      paid,
-      due,
-      payment_status: payment_status || 'Unpaid',
-      warehouseId // <-- SAVE IT
+    if (!isValidId(storeId) || !isValidId(customerId) || !isValidId(saleRef)) {
+      throw new Error('Valid storeId, customerId, and saleId are required.');
+    }
+
+    const resolvedItems = [];
+    for (const item of returnItems) {
+      const resolvedVariantId = await resolveReturnVariantId(item, saleRef, transaction);
+      resolvedItems.push({
+        ...item,
+        variantId: resolvedVariantId,
+      });
+    }
+
+    const salesReturn = await SaleReturn.create({
+      ...saleReturnData,
+      saleId: Number(saleRef),
+      customerId: Number(customerId),
+      storeId: Number(storeId),
+      createdBy: Number(req.user.userId),
     }, { transaction });
 
-    // Process each returned item
-    if (returnItems && returnItems.length > 0) {
-      for (const item of returnItems) {
-        await models.ReturnItem.create({
-          returnId: salesReturn.id,
-          productId: item.productId,
-          variantId: item.variantId || null,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.total
-        }, { transaction });
+    await ReturnItem.bulkCreate(
+      resolvedItems.map(item => ({
+        saleReturnId: salesReturn.id,
+        productId: Number(item.productId),
+        variantId: Number(item.variantId),
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        reason: item.reason || '',
+        subtotal: Number(item.total)
+      })),
+      { transaction }
+    );
 
-        // Update inventory (add back returned items)
-        if (item.variantId) {
-          // Pass warehouseId to the helper
-          await updateVariantInventory(item.variantId, item.quantity, warehouseId, transaction);
-        } else {
-          // (This else block for non-variant products is likely flawed, but let's fix the warehouse bug)
-          // Pass warehouseId to the helper
-          await updateProductInventory(item.productId, item.quantity, warehouseId, transaction);
-        }
-      }
+    const createdItems = await ReturnItem.findAll({
+      where: { saleReturnId: salesReturn.id },
+      attributes: ['id'],
+      transaction,
+    });
+
+    for (const item of resolvedItems) {
+      await updateInventoryOnReturn(item.variantId, item.quantity, storeId, transaction);
     }
 
     await transaction.commit();
-    res.status(201).json(salesReturn);
+    const responsePayload = {
+      ...toObjectWithId(salesReturn),
+      items: createdItems.map(item => item.id),
+    };
+    res.status(201).json(responsePayload);
   } catch (error) {
     await transaction.rollback();
     console.error('POST /sales-returns error:', error);
     res.status(500).json({ error: error.message });
   }
 });
-
-// Helper functions for inventory updates
-async function updateVariantInventory(variantId, quantity, warehouseId, transaction) {
-  const inventory = await models.Inventory.findOne({
-    where: { 
-      variantId: variantId,
-      warehouseId: warehouseId // <-- USE THE PASSED WAREHOUSE ID
-    },
-    transaction
-  });
-
-  if (inventory) {
-    await inventory.increment('qty', { by: quantity, transaction });
-  } else {
-    // Create new inventory record in the correct warehouse
-    await models.Inventory.create({
-      variantId,
-      warehouseId: warehouseId, // <-- USE THE PASSED WAREHOUSE ID
-      qty: quantity,
-      quantityAlert: 0
-    }, { transaction });
-  }
-}
-
-async function updateProductInventory(productId, quantity, warehouseId, transaction) {
-  // Find the first variant for this product (this logic is risky, but consistent with the file)
-  const variant = await models.ProductVariant.findOne({
-    where: { productId },
-    transaction
-  });
-
-  if (variant) {
-    // Call the other helper with the correct warehouseId
-    await updateVariantInventory(variant.id, quantity, warehouseId, transaction);
-  } else {
-    console.warn(`SalesReturn: Could not find a variant for product ${productId} to restore inventory.`);
-  }
-}
 
 export default router;

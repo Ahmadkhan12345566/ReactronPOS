@@ -17,9 +17,10 @@ export default function Brands() {
     try {
       setLoading(true);
       const data = await api.get('/api/brands');
-      
+      const brandRows = Array.isArray(data) ? data : [];
+
       // Format dates for display
-      const formattedData = data.map(brand => ({
+      const formattedData = brandRows.map(brand => ({
         ...brand,
         createdAt: new Date(brand.createdAt).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -29,11 +30,7 @@ export default function Brands() {
       }));
       
       setBrands(formattedData);
-      if (data.length === 0) {
-        setError('No brands found');  
-      } else {
-        setError(null);
-      }
+      setError(null);
     } catch (err) {
       setError('Failed to fetch brands');
       console.error(err);
@@ -49,7 +46,8 @@ export default function Brands() {
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <BrandList 
         brands={brands || []} 
-        setShowForm={() => navigate('/brands/add')} 
+        setShowForm={() => navigate('/add-brand')}
+        onRefresh={fetchBrands}
       />
     </div>
   );

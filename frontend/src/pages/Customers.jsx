@@ -19,12 +19,8 @@ export default function Customers() {
       setLoading(true);
       const data = await api.get('/api/customers');
       
-      setCustomers(data);
-      if (data.length === 0) {
-        setError('No customers found');  
-      } else {
-        setError(null);
-      }
+      setCustomers(Array.isArray(data) ? data : []);
+      setError(null);
     } catch (err) {
       setError('Failed to fetch customers');
       console.error(err);
@@ -40,7 +36,8 @@ export default function Customers() {
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <CustomerList 
         customers={customers || []} 
-        setShowForm={() => navigate('/customers/add')} 
+        setShowForm={() => navigate('/add-customer')} 
+        onRefresh={fetchCustomers}
       />
     </div>
   );

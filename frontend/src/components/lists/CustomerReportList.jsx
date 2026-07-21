@@ -12,6 +12,7 @@ import ListPagination from '../ListComponents/ListPagination';
 import DateRangePicker from '../ListComponents/DateRangePicker';
 import SelectField from '../ListComponents/SelectField';
 import GenerateButton from '../ListComponents/GenerateButton';
+import { exportToPDF } from '../ListComponents/exportFunctions';
 import { PrinterIcon } from '@heroicons/react/24/outline';
 
 export default function CustomerReportList({ reports }) {
@@ -37,6 +38,9 @@ export default function CustomerReportList({ reports }) {
   // Print function
   const handlePrint = () => {
     window.print();
+  };
+  const handleGenerate = () => {
+    exportToPDF(filteredData, 'customer_report');
   };
 
   // Columns configuration
@@ -140,7 +144,6 @@ export default function CustomerReportList({ reports }) {
   const {
     table,
     controlButtons,
-    primaryButtons,
     emptyState
   } = useUI({
     moduleName: 'customer reports',
@@ -216,7 +219,7 @@ export default function CustomerReportList({ reports }) {
             colClass="md:col-span-2"
           />
 
-          <GenerateButton onClick={() => console.log('Generated')} />
+          <GenerateButton onClick={handleGenerate} label="Generate PDF" />
         </div>
       </ListFilter>
       

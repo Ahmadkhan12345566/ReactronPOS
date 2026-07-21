@@ -17,9 +17,10 @@ export default function Categories() {
     try {
       setLoading(true);
       const data = await api.get('/api/categories');
-      
+      const categoryRows = Array.isArray(data) ? data : [];
+
       // Format dates for display
-      const formattedData = data.map(category => ({
+      const formattedData = categoryRows.map(category => ({
         ...category,
         created_at: new Date(category.created_at).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -29,11 +30,7 @@ export default function Categories() {
       }));
       
       setCategories(formattedData);
-      if (data.length === 0) {
-        setError('No categories found');  
-      } else {
-        setError(null);
-      }
+      setError(null);
     } catch (err) {
       setError('Failed to fetch categories');
       console.error(err);
@@ -49,7 +46,8 @@ export default function Categories() {
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       <CategoryList 
         categories={categories || []} 
-        setShowForm={() => navigate('/categories/add')} 
+        setShowForm={() => navigate('/add-category')}
+        onRefresh={fetchCategories}
       />
     </div>
   );

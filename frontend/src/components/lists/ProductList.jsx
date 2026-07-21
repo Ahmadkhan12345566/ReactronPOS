@@ -15,18 +15,32 @@ import {
   selectColumn, 
   indexColumn, 
   imageColumn,
-  actionsColumn
+  actionsColumn,
+  statusColumn
 } from '../ListComponents/columnHelpers';
 
-export default function ProductList({ products, setShowForm }) {
+import { usePos } from '../../hooks/usePos';
+import { api } from '../../services/api';
+import EditProductForm from '../forms/EditProductForm';
+import ProductDetails from './ProductDetails';
+
+export default function ProductList({ products = [], setShowForm, onRefresh }) {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [brandFilter, setBrandFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
    const navigate = useNavigate();
+   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   // Derive unique categories & brands
-  const categories = useMemo(() => ['All', ...new Set(products.map(p => p.category))], [products]);
-  const brands = useMemo(() => ['All', ...new Set(products.map(p => p.brand))], [products]);
+  const categories = useMemo(() => {
+    const values = products.map(p => p.category).filter(Boolean);
+    return ['All', ...new Set(values)];
+  }, [products]);
+  const brands = useMemo(() => {
+    const values = products.map(p => p.brand).filter(Boolean);
+    return ['All', ...new Set(values)];
+  }, [products]);
 
   // Columns configuration
 const columns = [
@@ -59,6 +73,7 @@ const columns = [
     header: 'Qty',
     size: 60,
   },
+  statusColumn('status', 'Status'),
   {
     accessorKey: 'createdBy',
     header: 'Created By',
@@ -66,17 +81,48 @@ const columns = [
     cell: ({ getValue }) => getValue() || 'Unknown'
   },
   // imageColumn('createdBy', 'Created By', 'createdByAvatar', 140),
-  actionsColumn(['view', 'edit', 'delete'])
+  actionsColumn(['view', 'edit', 'delete'], 120, {
+    isActionDisabled: (action) => !isAdmin && (action === 'edit' || action === 'delete'),
+  })
 ];
 
   // Filtered data
   const filteredData = useMemo(() => {
-    return products.filter(p => 
-      (categoryFilter === 'All' || p.category === categoryFilter) &&
-      (brandFilter === 'All' || p.brand === brandFilter) &&
-      `${p.code} ${p.name}`.toLowerCase().includes(search.toLowerCase())
-    );
+    return products.filter(p => {
+      const sku = p.ProductVariants?.[0]?.sku || '';
+      const searchValue = `${p.code ?? ''} ${p.name ?? ''} ${sku}`.toLowerCase();
+      return (
+        (categoryFilter === 'All' || p.category === categoryFilter) &&
+        (brandFilter === 'All' || p.brand === brandFilter) &&
+        searchValue.includes(search.toLowerCase())
+      );
+    });
   }, [products, search, categoryFilter, brandFilter]);
+
+  const handleDelete = async (product) => {
+    try {
+      await api.delete(`/api/products/${product.id}`);
+      if (typeof onRefresh === 'function') {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
+  };
+
+  const actionRenderers = {
+    view: ({ data }) => <ProductDetails product={data} />,
+    edit: ({ data, onClose }) => (
+      <EditProductForm product={data} onSaved={onRefresh} onCancel={onClose} />
+    ),
+  };
+
+  const actionTitles = {
+    view: 'Product Details',
+    edit: 'Edit Product',
+    delete: 'Delete Product',
+  };
+
   const {
   table,
   controlButtons,
@@ -89,8 +135,9 @@ const columns = [
   rowSelection,
   setRowSelection,
   onImportItem: () => setShowForm(true),
-  onAddItem: () => navigate('/products/add'),
-  onSortToggle: () => console.log('Collapse clicked'),
+  onAddItem: () => navigate('/add-product'),
+  isAddDisabled: !isAdmin,
+  onRefresh,
   resetFilters: () => {
           setSearch('');
           setCategoryFilter('All');
@@ -134,6 +181,9 @@ const columns = [
         table={table} 
         emptyState={emptyState}
         maxHeight={"max-h-[calc(100vh-26rem)]"}
+        handleDelete={handleDelete}
+        actionRenderers={actionRenderers}
+        actionTitles={actionTitles}
       />
       
       <ListPagination 

@@ -6,6 +6,8 @@ const statusMap = {
   Received: { className: 'bg-green-100 text-green-800' },
   Pending: { className: 'bg-cyan-100 text-cyan-800' },
   Ordered: { className: 'bg-yellow-100 text-yellow-800' },
+  Active: { className: 'bg-green-100 text-green-800' },
+  Inactive: { className: 'bg-gray-100 text-gray-800' },
   default: { className: 'bg-gray-100 text-gray-800' }
 };
 
@@ -72,52 +74,66 @@ export const statusColumn = (accessor, header, size = 100) => ({
 });
 
 // Reusable Actions Column
-export const actionsColumn = (actions = ['view', 'edit', 'delete'], size = 120) => ({
+const actionConfig = {
+  view: {
+    label: 'View',
+    className: 'text-blue-600 hover:bg-blue-50',
+    icon: EyeIcon,
+  },
+  edit: {
+    label: 'Edit',
+    className: 'text-green-600 hover:bg-green-50',
+    icon: PencilIcon,
+  },
+  delete: {
+    label: 'Delete',
+    className: 'text-red-600 hover:bg-red-50',
+    icon: TrashIcon,
+  },
+};
+
+export const actionsColumn = (
+  actions = ['view', 'edit', 'delete'],
+  size = 120,
+  options = {}
+) => ({
   id: 'actions',
   header: '',
   cell: ({ row, openModal }) => (
-    <div className="flex justify-center">
-      <div className="dropdown">
-        <button className="text-gray-500 hover:text-gray-700">
-          {/* Three dots icon */}
-        </button>
-        <div className="dropdown-menu">
-         
-          <div className="flex space-x-1 mb-2">
-            {actions.includes('view') && (
-              <button
-                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
-                onClick={() => openModal('view', row.original)}
-              >
-                <EyeIcon className="w-5 h-5" />
-              </button>
-            )}
-            {actions.includes('edit') && (
-              <button
-                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
-                onClick={() => openModal('edit', row.original)}
-              >
-                <PencilIcon className="w-5 h-5" />
-              </button>
-            )}
-            {actions.includes('delete') && (
-              <button
-                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
-                onClick={() => openModal('delete', row.original)}
-              >
-                <TrashIcon className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="flex justify-center gap-1">
+      {actions.map((action) => {
+        const config = actionConfig[action] || {};
+        const Icon = config.icon;
+        const isDisabled = typeof options.isActionDisabled === 'function'
+          ? options.isActionDisabled(action, row.original)
+          : false;
+        const label = typeof options.getActionLabel === 'function'
+          ? options.getActionLabel(action, row.original)
+          : config.label || action;
+
+        return (
+          <button
+            key={action}
+            type="button"
+            className={`p-1.5 rounded-lg ${config.className || ''} ${
+              isDisabled ? 'opacity-40 cursor-not-allowed' : ''
+            }`}
+            onClick={() => !isDisabled && openModal(action, row.original)}
+            disabled={isDisabled}
+            aria-label={label}
+            title={label}
+          >
+            {Icon ? <Icon className="w-5 h-5" /> : null}
+          </button>
+        );
+      })}
     </div>
   ),
   size
 });
 
 // Reusable Image Column - shows image + name (if nameAccessor is provided)
-export const imageColumn = (nameAccessor, header, imageAccessor, size = 'md') => ({
+export const imageColumn = (nameAccessor, header, imageAccessor) => ({
   accessorKey: imageAccessor,
   header,
   cell: ({ row }) => {

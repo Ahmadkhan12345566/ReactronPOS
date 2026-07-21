@@ -1,26 +1,41 @@
-// Create this new file for purchase items
-export default function PurchaseItemModel(sequelize, DataTypes) {
-  const PurchaseItem = sequelize.define('PurchaseItem', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    productId: DataTypes.INTEGER,
-    quantity: DataTypes.INTEGER,
-    unitPrice: DataTypes.DECIMAL(10, 2),
-    discount: DataTypes.DECIMAL(5, 2),
-    subtotal: DataTypes.DECIMAL(10, 2)
-  }, {
-    tableName: 'purchase_items',
-    timestamps: true
-  });
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-  PurchaseItem.associate = function(models) {
-    PurchaseItem.belongsTo(models.Purchase, { foreignKey: 'purchaseId' });
-    PurchaseItem.belongsTo(models.Product, { foreignKey: 'productId' });
-  };
+const PurchaseItem = sequelize.define('PurchaseItem', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  purchaseId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'purchase',
+  },
+  productId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'product',
+  },
+  quantity: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  unitPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+  },
+  discount: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
+  },
+  subtotal: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+  },
+}, {
+  tableName: 'purchase_items',
+  timestamps: true,
+});
 
-  return PurchaseItem;
-}
-// models/purchaseItem.js
+export default PurchaseItem;

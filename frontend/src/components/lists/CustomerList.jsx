@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useUI } from "../ListComponents/useUI";
-import { selectColumn, imageColumn, statusColumn, actionsColumn } from '../ListComponents/columnHelpers';
+import { selectColumn, statusColumn, actionsColumn } from '../ListComponents/columnHelpers';
+import { api } from '../../services/api';
+import EditCustomerForm from '../forms/EditCustomerForm';
 
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
@@ -12,18 +14,17 @@ import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function CustomerList({ customers = [], setShowForm }) {
+export default function CustomerList({ customers = [], setShowForm, onRefresh }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
-  
+
   // Status options
   const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
 
   // Columns configuration using helpers
   const columns = [
     selectColumn(),
-    // Image (handles missing or empty urls)
     {
       id: 'image',
       accessorFn: row => row.image || row.icon || '',
@@ -32,8 +33,10 @@ export default function CustomerList({ customers = [], setShowForm }) {
       cell: ({ getValue }) => {
         const src = getValue();
         return src ? (
-          <img src={src} alt="cat" className="w-10 h-10 object-cover rounded-md" />
-        ) : <span className="text-xs text-gray-400">—</span>;
+          <img src={src} alt="customer" className="w-10 h-10 object-cover rounded-md" />
+        ) : (
+          <span className="text-xs text-gray-400">--</span>
+        );
       }
     },
     {
@@ -75,6 +78,23 @@ export default function CustomerList({ customers = [], setShowForm }) {
     );
   }, [customers, search, statusFilter]);
 
+  const handleDelete = async (customer) => {
+    try {
+      await api.delete(`/api/customers/${customer.id}`);
+      if (typeof onRefresh === 'function') {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+    }
+  };
+
+  const actionRenderers = {
+    edit: ({ data, onClose }) => (
+      <EditCustomerForm customer={data} onSaved={onRefresh} onCancel={onClose} />
+    ),
+  };
+
   // Use UI hook
   const {
     table,
@@ -88,6 +108,7 @@ export default function CustomerList({ customers = [], setShowForm }) {
     rowSelection,
     setRowSelection,
     onAddItem: () => setShowForm(true),
+    onRefresh,
     resetFilters: () => {
       setSearch('');
       setStatusFilter('All');
@@ -105,7 +126,7 @@ export default function CustomerList({ customers = [], setShowForm }) {
           <React.Fragment key={i}>{btn.element}</React.Fragment>
         ))}
       />
-      
+
       <ListFilter>
         <SearchInput search={search} setSearch={setSearch} placeholder="Search customers..." />
         <SelectFilters 
@@ -114,13 +135,15 @@ export default function CustomerList({ customers = [], setShowForm }) {
           statusOptions={statusOptions} 
         />
       </ListFilter>
-      
+
       <ListTable 
         table={table} 
         emptyState={emptyState}
         maxHeight={"max-h-[calc(100vh-26rem)]"}
+        handleDelete={handleDelete}
+        actionRenderers={actionRenderers}
       />
-      
+
       <ListPagination 
         table={table} 
         dataLength={filteredData.length} 

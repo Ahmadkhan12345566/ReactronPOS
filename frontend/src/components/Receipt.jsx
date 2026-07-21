@@ -21,7 +21,7 @@ export default function Receipt({
     // invoice number
     const datePart   = new Date().toISOString().slice(0,10).replace(/-/g,'');
     const randomPart = Math.floor(1000 + Math.random()*9000);
-    setInvoiceNo(`INV-PKR{datePart}-PKR{randomPart}`);
+    setInvoiceNo(`INV-${datePart}-${randomPart}`);
     // formatted date
     setCurrentDate(new Date().toLocaleString('en-US', {
       year: 'numeric', month: 'short',

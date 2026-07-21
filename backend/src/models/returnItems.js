@@ -1,25 +1,44 @@
-// Create this new file for return items
-export default function ReturnItemModel(sequelize, DataTypes) {
-  const ReturnItem = sequelize.define('ReturnItem', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    productId: DataTypes.INTEGER,
-    quantity: DataTypes.INTEGER,
-    unitPrice: DataTypes.DECIMAL(10, 2),
-    reason: DataTypes.TEXT,
-    subtotal: DataTypes.DECIMAL(10, 2)
-  }, {
-    tableName: 'return_items',
-    timestamps: true
-  });
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-  ReturnItem.associate = function(models) {
-    ReturnItem.belongsTo(models.SaleReturn, { foreignKey: 'returnId' });
-    ReturnItem.belongsTo(models.Product, { foreignKey: 'productId' });
-  };
+const ReturnItem = sequelize.define('ReturnItem', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  saleReturnId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'saleReturn',
+  },
+  productId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'product',
+  },
+  variantId: {
+    type: DataTypes.INTEGER,
+    field: 'variant',
+  },
+  quantity: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  unitPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+  },
+  reason: {
+    type: DataTypes.STRING,
+  },
+  subtotal: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+  },
+}, {
+  tableName: 'return_items',
+  timestamps: true,
+});
 
-  return ReturnItem;
-}
+export default ReturnItem;

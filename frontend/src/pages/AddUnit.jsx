@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
-import { usePos } from '../context/PosContext';
+import { usePos } from '../hooks/usePos';
 import { api } from '../services/api';
 import {
   ArrowPathIcon,
@@ -14,6 +14,7 @@ import {
 
 const AddUnit = () => {
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,11 +24,6 @@ const AddUnit = () => {
       const formData = new FormData(e.target);
       const data = Object.fromEntries(formData.entries());
       
-      
-      if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
-      data.createdBy = currentUser.id;
-      
-      console.log('Data to send:', data);
       await api.post('/api/units', data);
       navigate('/units');
     } catch (error) {
@@ -111,7 +107,8 @@ const AddUnit = () => {
 
         <FormFooter 
           cancelPath="/units" 
-          submitLabel="Add Unit" 
+          submitLabel="Add Unit"
+          disabled={!isAdmin}
         />
       </form>
     </div>

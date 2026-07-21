@@ -1,38 +1,67 @@
-export default function SaleModel(sequelize, DataTypes) {
-  const Sale = sequelize.define('Sale', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    reference: DataTypes.STRING,
-    date: DataTypes.DATE,
-    status: DataTypes.ENUM('Completed', 'Pending'),
-    payment_status: DataTypes.ENUM('Paid', 'Unpaid', 'Overdue'),
-    payment_method: DataTypes.STRING,
-    subtotal: DataTypes.DECIMAL(10, 2),
-    discount: DataTypes.DECIMAL(10, 2),
-    tax: DataTypes.DECIMAL(10, 2),
-    shipping: DataTypes.DECIMAL(10, 2),
-    total: DataTypes.DECIMAL(10, 2),
-    paid: DataTypes.DECIMAL(10, 2),
-    due: DataTypes.DECIMAL(10, 2),
-    note: DataTypes.TEXT,
-    warehouseId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-  }, {
-    tableName: 'sales',
-    timestamps: true
-  });
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-  Sale.associate = function(models) {
-    Sale.belongsTo(models.Customer, { foreignKey: 'customerId' });
-    Sale.belongsTo(models.User, { foreignKey: 'userId' });
-    Sale.belongsTo(models.Warehouse, { foreignKey: 'warehouseId' });
-    Sale.hasMany(models.OrderItem, { foreignKey: 'saleId' });
-  };
+const Sale = sequelize.define('Sale', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  reference: {
+    type: DataTypes.STRING,
+  },
+  date: {
+    type: DataTypes.DATE,
+  },
+  status: {
+    type: DataTypes.ENUM('Completed', 'Pending'),
+  },
+  payment_status: {
+    type: DataTypes.ENUM('Paid', 'Unpaid', 'Overdue'),
+  },
+  payment_method: {
+    type: DataTypes.STRING,
+  },
+  subtotal: {
+    type: DataTypes.FLOAT,
+  },
+  discount: {
+    type: DataTypes.FLOAT,
+  },
+  tax: {
+    type: DataTypes.FLOAT,
+  },
+  shipping: {
+    type: DataTypes.FLOAT,
+  },
+  total: {
+    type: DataTypes.FLOAT,
+  },
+  paid: {
+    type: DataTypes.FLOAT,
+  },
+  due: {
+    type: DataTypes.FLOAT,
+  },
+  note: {
+    type: DataTypes.TEXT,
+  },
+  customerId: {
+    type: DataTypes.INTEGER,
+    field: 'customer',
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    field: 'user',
+  },
+  storeId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'store',
+  },
+}, {
+  tableName: 'sales',
+  timestamps: true,
+});
 
-  return Sale;
-}
+export default Sale;

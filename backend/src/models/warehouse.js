@@ -1,25 +1,30 @@
-export default function WarehouseModel(sequelize, DataTypes) {
-  const Warehouse = sequelize.define('Warehouse', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    name: DataTypes.STRING,
-    address: DataTypes.STRING,
-    status: {
-      type: DataTypes.ENUM('Active', 'Inactive'),
-      defaultValue: 'Active'
-    }
-  }, {
-    tableName: 'warehouses',
-    timestamps: true
-  });
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-  Warehouse.associate = function(models) {
-    // Inventory handles relation with ProductVariant
-    Warehouse.hasMany(models.Inventory, { foreignKey: 'warehouseId', onDelete: 'CASCADE' });
-  };
+const Warehouse = sequelize.define('Warehouse', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  address: {
+    type: DataTypes.STRING,
+  },
+  status: {
+    type: DataTypes.ENUM('Active', 'Inactive'),
+    defaultValue: 'Active',
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+}, {
+  tableName: 'warehouses',
+  timestamps: true,
+});
 
-  return Warehouse;
-}
+export default Warehouse;

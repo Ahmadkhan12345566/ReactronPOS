@@ -3,7 +3,7 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
-import { usePos } from '../context/PosContext';
+import { usePos } from '../hooks/usePos';
 import { api } from '../services/api';
 import {
   ArrowPathIcon,
@@ -14,6 +14,7 @@ import {
 
 const AddCategory = () => {
   const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
 
@@ -32,7 +33,6 @@ const AddCategory = () => {
       if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
       data.createdBy = currentUser.id;
       
-      console.log('Data to send:', data);
       await api.post('/api/categories', data);
       navigate('/categories');
     } catch (error) {
@@ -176,6 +176,7 @@ const AddCategory = () => {
         <FormFooter 
           cancelPath="/categories" 
           submitLabel="Add Category" 
+          disabled={!isAdmin}
         />
       </form>
     </div>

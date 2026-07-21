@@ -1,31 +1,32 @@
-export default function SubCategoryModel(sequelize, DataTypes) {
-  const SubCategory = sequelize.define('SubCategory', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    name: DataTypes.STRING,
-    status: {
-      type: DataTypes.ENUM('Active', 'Inactive'),
-      defaultValue: 'Active'
-    },
-    categoryId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: 'categories',
-        key: 'id'
-      }
-    }
-  }, {
-    tableName: 'sub_categories',
-    timestamps: true
-  });
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-  SubCategory.associate = function(models) {
-    SubCategory.belongsTo(models.Category, { foreignKey: 'categoryId' });
-    SubCategory.hasMany(models.Product, { foreignKey: 'subCategoryId' });
-  };
+const SubCategory = sequelize.define('SubCategory', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  status: {
+    type: DataTypes.ENUM('Active', 'Inactive'),
+    defaultValue: 'Active',
+  },
+  categoryId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'category',
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+}, {
+  tableName: 'sub_categories',
+  timestamps: true,
+});
 
-  return SubCategory;
-}
+export default SubCategory;

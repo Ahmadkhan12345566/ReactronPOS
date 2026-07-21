@@ -1,7 +1,7 @@
 // frontend/src/pages/CustomerReport.jsx
 
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import CustomerReportList from '../components/lists/CustomerReportList';
 import { api } from '../services/api'; // <-- IMPORT API
 
@@ -57,11 +57,6 @@ export default function CustomerReport() {
   }, []);
 
 
-  const location = useLocation();
-  const isDueReport = location.pathname.includes('/due');
-  const pageTitle = isDueReport ? "Customer Due Report" : "Customer Report";
-  const pageDescription = isDueReport ? "View Reports of Customer" : "Manage your customer reports";
-  
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">
       {/* Navigation Tabs */}

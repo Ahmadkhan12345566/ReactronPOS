@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
 import SupplierModal from '../components/forms/SupplierModal';
 import { api } from '../services/api';
+import { usePos } from '../hooks/usePos';
 import {
   ArrowPathIcon,
   ChevronUpIcon,
@@ -16,13 +17,16 @@ import {
 const AddPurchase = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
+  const [stores, setStores] = useState([]);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [purchaseItems, setPurchaseItems] = useState([]);
+  const [paidAmount, setPaidAmount] = useState(0);
   const [accordion, setAccordion] = useState({
     purchaseInfo: true,
     purchaseItems: false
   });
+  const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   
   const navigate = useNavigate();
 
@@ -32,15 +36,14 @@ const AddPurchase = () => {
 
   const fetchOptions = async () => {
   try {
-    const [suppliersResponse, productsResponse, warehousesResponse] = await Promise.all([
+    const [suppliersResponse, productsResponse, storesResponse] = await Promise.all([
       api.get('/api/suppliers'),
       api.get('/api/products'), 
-      api.get('/api/warehouses')
+      api.get('/api/stores')
     ]);
-    console.log(productsResponse);
     setSuppliers(suppliersResponse);
     setProducts(productsResponse);
-    setWarehouses(warehousesResponse);
+    setStores(storesResponse);
   } catch (error) {
     console.error('Error fetching options:', error);
   }
@@ -57,25 +60,23 @@ const AddPurchase = () => {
       const data = Object.fromEntries(formData.entries());
       
       // Calculate totals from purchase items
-      let subtotal = 0;
-      const items = purchaseItems.map((item, index) => {
-        const quantity = parseFloat(data[`quantity_${index}`]) || 0;
-        const unitPrice = parseFloat(data[`unitPrice_${index}`]) || 0;
+      const items = purchaseItems.map((item) => {
+        const quantity = Number(item.quantity) || 0;
+        const unitPrice = Number(item.unitPrice) || 0;
         const itemTotal = quantity * unitPrice;
-        subtotal += itemTotal;
-        
+
         return {
           productId: item.productId,
           variantId: item.variantId,
-          warehouseId: item.warehouseId,
-          quantity: quantity,
-          unitPrice: unitPrice,
+          storeId: item.storeId,
+          quantity,
+          unitPrice,
           subtotal: itemTotal
         };
       });
 
-      const total = subtotal;
-      const paid = parseFloat(data.paid) || 0;
+      const total = items.reduce((sum, item) => sum + item.subtotal, 0);
+      const paid = Number(paidAmount) || 0;
       const due = total - paid;
       
       const purchaseData = {
@@ -86,11 +87,10 @@ const AddPurchase = () => {
         total: total,
         paid: paid,
         due: due,
-        supplierId: parseInt(data.supplierId),
+        supplierId: data.supplierId,
         purchaseItems: items
       };
       
-      console.log('Purchase data to send:', purchaseData);
       await api.post('/api/purchases', purchaseData);
       navigate('/purchases');
     } catch (error) {
@@ -109,7 +109,7 @@ const AddPurchase = () => {
     setPurchaseItems([...purchaseItems, { 
       productId: '', 
       variantId: '', 
-      warehouseId: warehouses[0]?.id || '', 
+      storeId: stores[0]?.id || '', 
       quantity: 1, 
       unitPrice: 0 
     }]);
@@ -123,11 +123,15 @@ const AddPurchase = () => {
 
   const updatePurchaseItem = (index, field, value) => {
     const newItems = [...purchaseItems];
-    newItems[index][field] = value;
+    if (field === 'quantity' || field === 'unitPrice') {
+      newItems[index][field] = Number(value);
+    } else {
+      newItems[index][field] = value;
+    }
     
     // If product changes, auto-select the first variant
     if (field === 'productId') {
-      const product = products.find(p => p.id === parseInt(value));
+      const product = products.find(p => p.id === value);
       if (product && product.ProductVariants && product.ProductVariants.length > 0) {
         newItems[index].variantId = product.ProductVariants[0].id;
       } else {
@@ -139,41 +143,19 @@ const AddPurchase = () => {
   };
 
   const getProductVariants = (productId) => {
-    const product = products.find(p => p.id === parseInt(productId));
+    const product = products.find(p => p.id === productId);
     return product?.ProductVariants || [];
   };
 
-  const calculateDueAmount = (e) => {
-    const form = e.target.form;
-    const total = parseFloat(form.total?.value) || 0;
-    const paid = parseFloat(form.paid?.value) || 0;
-    if (form.due) {
-      form.due.value = (total - paid).toFixed(2);
-    }
-  };
-
-  // Calculate total from purchase items
-  const calculateTotal = () => {
-    return purchaseItems.reduce((total, item, index) => {
-      const quantity = parseFloat(document.querySelector(`[name="quantity_${index}"]`)?.value) || 0;
-      const unitPrice = parseFloat(document.querySelector(`[name="unitPrice_${index}"]`)?.value) || 0;
-      return total + (quantity * unitPrice);
+  const totalAmount = useMemo(() => {
+    return purchaseItems.reduce((sum, item) => {
+      const quantity = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unitPrice) || 0;
+      return sum + (quantity * unitPrice);
     }, 0);
-  };
-
-  // Update total when purchase items change
-  useEffect(() => {
-    const total = calculateTotal();
-    const totalInput = document.querySelector('[name="total"]');
-    const paidInput = document.querySelector('[name="paid"]');
-    const dueInput = document.querySelector('[name="due"]');
-    
-    if (totalInput) totalInput.value = total.toFixed(2);
-    if (dueInput && paidInput) {
-      const paid = parseFloat(paidInput.value) || 0;
-      dueInput.value = (total - paid).toFixed(2);
-    }
   }, [purchaseItems]);
+
+  const dueAmount = totalAmount - (Number(paidAmount) || 0);
 
   return (
     <div className="bg-gray-50 flex flex-col h-full p-6">
@@ -283,6 +265,7 @@ const AddPurchase = () => {
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-100"
                   placeholder="0.00"
                   readOnly
+                  value={totalAmount.toFixed(2)}
                 />
               </div>
               
@@ -296,8 +279,8 @@ const AddPurchase = () => {
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   placeholder="0.00"
-                  defaultValue="0"
-                  onChange={calculateDueAmount}
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
                 />
               </div>
               
@@ -312,6 +295,7 @@ const AddPurchase = () => {
                   className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-100"
                   placeholder="0.00"
                   readOnly
+                  value={dueAmount.toFixed(2)}
                 />
               </div>
               
@@ -356,7 +340,7 @@ const AddPurchase = () => {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warehouse</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
@@ -366,8 +350,6 @@ const AddPurchase = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {purchaseItems.map((item, index) => {
                       const variants = getProductVariants(item.productId);
-                      console.log('Available variants:', variants); // Debug log
-                      
                       return (
                         <tr key={index}>
                           <td className="px-4 py-3">
@@ -409,12 +391,12 @@ const AddPurchase = () => {
                           <td className="px-4 py-3">
                             <select 
                               className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
-                              value={item.warehouseId}
-                              onChange={(e) => updatePurchaseItem(index, 'warehouseId', e.target.value)}
+                              value={item.storeId}
+                              onChange={(e) => updatePurchaseItem(index, 'storeId', e.target.value)}
                               required
                             >
-                              {warehouses.map(warehouse => (
-                                <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
+                              {stores.map(store => (
+                                <option key={store.id} value={store.id}>{store.name}</option>
                               ))}
                             </select>
                           </td>
@@ -425,7 +407,8 @@ const AddPurchase = () => {
                               type="number" 
                               className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                               min="1"
-                              defaultValue="1"
+                              value={item.quantity}
+                              onChange={(e) => updatePurchaseItem(index, 'quantity', e.target.value)}
                               required
                             />
                           </td>
@@ -437,6 +420,8 @@ const AddPurchase = () => {
                               className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
                               step="0.01"
                               min="0"
+                              value={item.unitPrice}
+                              onChange={(e) => updatePurchaseItem(index, 'unitPrice', e.target.value)}
                               required
                             />
                           </td>
@@ -446,11 +431,9 @@ const AddPurchase = () => {
                               type="text" 
                               className="w-full px-2 py-1 border border-gray-600 rounded bg-gray-100"
                               readOnly
-                              value={(() => {
-                                const quantity = parseFloat(document.querySelector(`[name="quantity_${index}"]`)?.value) || 0;
-                                const unitPrice = parseFloat(document.querySelector(`[name="unitPrice_${index}"]`)?.value) || 0;
-                                return (quantity * unitPrice).toFixed(2);
-                              })()}
+                              value={(
+                                (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+                              ).toFixed(2)}
                             />
                           </td>
                           
@@ -480,6 +463,7 @@ const AddPurchase = () => {
         <FormFooter 
           cancelPath="/purchases" 
           submitLabel="Add Purchase" 
+          disabled={!isAdmin}
         />
       </form>
       <SupplierModal 

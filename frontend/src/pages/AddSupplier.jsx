@@ -3,7 +3,7 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
-import { usePos } from '../context/PosContext';
+import { usePos } from '../hooks/usePos';
 import { api } from '../services/api';
 import {
   ArrowPathIcon,
@@ -13,6 +13,8 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AddSupplier = () => {
+  const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
 
@@ -28,7 +30,6 @@ const AddSupplier = () => {
         data.image = selectedImage;
       }
       
-      console.log('Data to send:', data);
       await api.post('/api/suppliers', data);
       navigate('/suppliers');
     } catch (error) {
@@ -211,6 +212,7 @@ const AddSupplier = () => {
         <FormFooter 
           cancelPath="/suppliers" 
           submitLabel="Add Supplier" 
+          disabled={!isAdmin}
         />
       </form>
     </div>

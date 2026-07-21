@@ -1,9 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  TrashIcon, 
-  EyeIcon, 
-  PencilIcon,
-} from '@heroicons/react/24/outline';
+import { usePos } from '../../hooks/usePos';
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
 import ListHeader from '../ListComponents/ListHeader';
@@ -20,6 +16,8 @@ const PurchaseList = ({ purchases = [], onAddPurchase }) => {
   const [search, setSearch] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
+  const { currentUser } = usePos();
+  const isAdmin = currentUser?.role === 'admin';
 
   // Payment status options
   const paymentStatusOptions = useMemo(() => ['All', 'Paid', 'Unpaid', 'Overdue'], []);
@@ -79,7 +77,7 @@ const PurchaseList = ({ purchases = [], onAddPurchase }) => {
       size: 100,
     },
     statusColumn('paymentStatus', 'Payment Status', 120),
-    actionsColumn(["view", 'edit', 'delete'])
+    actionsColumn(['view'])
   ];
 
   // Filtered data
@@ -105,7 +103,7 @@ const PurchaseList = ({ purchases = [], onAddPurchase }) => {
     rowSelection,
     setRowSelection,
     onAddItem: onAddPurchase,
-    onSortToggle: (() => console.log('Collapse clicked')),
+    isAddDisabled: !isAdmin,
     resetFilters: () => {
       setSearch('');
       setPaymentStatusFilter('All');
@@ -147,5 +145,6 @@ const PurchaseList = ({ purchases = [], onAddPurchase }) => {
     </ListContainer>
   );
 };
+
 
 export default PurchaseList;

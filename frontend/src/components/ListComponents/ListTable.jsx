@@ -2,7 +2,16 @@ import React, { useState } from 'react';
 import { flexRender } from '@tanstack/react-table';
 import ActionModal from './ActionModal';
 
-export default function ListTable({ table, isLoading, emptyState, maxHeight, handleDelete, handleEdit }) {
+export default function ListTable({
+  table,
+  isLoading,
+  emptyState,
+  maxHeight,
+  handleDelete,
+  handleEdit,
+  actionRenderers,
+  actionTitles,
+}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState(null);
   const [modalData, setModalData] = useState(null);
@@ -72,6 +81,8 @@ export default function ListTable({ table, isLoading, emptyState, maxHeight, han
         data={modalData}
         handleDelete={handleDelete}
         handleEdit={handleEdit}
+        renderers={actionRenderers}
+        titles={actionTitles}
       />
     </>
   );

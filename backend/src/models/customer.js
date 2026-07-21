@@ -1,31 +1,45 @@
-// models/customer.js
-export default function CustomerModel(sequelize, DataTypes) {
-  const Customer = sequelize.define('Customer', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    name: DataTypes.STRING,
-    email: DataTypes.STRING,
-    phone: DataTypes.STRING,
-    address: DataTypes.STRING,
-    city: DataTypes.STRING,
-    country: DataTypes.STRING,
-    image: DataTypes.TEXT('long'),
-    status: {
-      type: DataTypes.ENUM('Active', 'Inactive'),
-      defaultValue: 'Active'
-    }
-  }, {
-    tableName: 'customers',
-    timestamps: true
-  });
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-  Customer.associate = function(models) {
-    Customer.hasMany(models.Sale, { foreignKey: 'customerId' });
-    Customer.hasMany(models.SaleReturn, { foreignKey: 'customerId' });
-  };
+const Customer = sequelize.define('Customer', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING,
+  },
+  phone: {
+    type: DataTypes.STRING,
+  },
+  address: {
+    type: DataTypes.STRING,
+  },
+  city: {
+    type: DataTypes.STRING,
+  },
+  country: {
+    type: DataTypes.STRING,
+  },
+  image: {
+    type: DataTypes.STRING,
+  },
+  status: {
+    type: DataTypes.ENUM('Active', 'Inactive'),
+    defaultValue: 'Active',
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+}, {
+  tableName: 'customers',
+  timestamps: true,
+});
 
-  return Customer;
-}
+export default Customer;

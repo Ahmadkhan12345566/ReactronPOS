@@ -11,6 +11,7 @@ import ListPagination from '../ListComponents/ListPagination';
 import DateRangePicker from '../ListComponents/DateRangePicker';
 import SelectField from '../ListComponents/SelectField';
 import GenerateButton from '../ListComponents/GenerateButton';
+import { exportToPDF } from '../ListComponents/exportFunctions';
 import ListControlButtons from '../ListComponents/ListControlButtons';
 import SearchInput from '../ListComponents/SearchInput';
 
@@ -20,9 +21,15 @@ export default function PurchaseReportList({ reports }) {
   const [toDate, setToDate] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('All');
   const [productFilter, setProductFilter] = useState('All');
+  const handleGenerate = () => {
+    exportToPDF(filteredData, 'purchase_report');
+  };
   
   // Supplier options
-  const supplierOptions = ['All', 'Main Supplier', 'Electro Mart', 'Prime Suppliers'];
+  const supplierOptions = useMemo(() => {
+    const suppliers = [...new Set(reports.map(report => report.supplier).filter(Boolean))];
+    return ['All', ...suppliers];
+  }, [reports]);
   
   // Product options
   const productOptions = useMemo(() => {
@@ -106,15 +113,16 @@ export default function PurchaseReportList({ reports }) {
       const passesSupplier = supplierFilter === 'All' || report.supplier === supplierFilter;
       const passesProduct = productFilter === 'All' || report.product?.name === productFilter;
       const passesSearch = `${report.reference || ''} ${report.sku || ''} ${report.product?.name || ''} ${report.category || ''}`
-                          .toLowerCase()
-                          .includes(search.toLowerCase());
-      
-      const reportDate = report.dueDate ? new Date(report.dueDate) : null;
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+      const reportDateValue = report.dueDate || report.date;
+      const reportDate = reportDateValue ? new Date(reportDateValue) : null;
       const from = fromDate ? new Date(fromDate) : null;
       const to = toDate ? new Date(toDate) : null;
 
-      const passesFrom = from && reportDate ? reportDate >= from : true;
-      const passesTo = to && reportDate ? reportDate <= to : true;
+      const passesFrom = from ? (reportDate ? reportDate >= from : false) : true;
+      const passesTo = to ? (reportDate ? reportDate <= to : false) : true;
 
       return passesSupplier && passesProduct && passesSearch && passesFrom && passesTo;
     });
@@ -185,7 +193,7 @@ export default function PurchaseReportList({ reports }) {
               widthClass="w-full md:w-40"
             />
 
-            <GenerateButton onClick={() => console.log('Generate report')} />
+            <GenerateButton onClick={handleGenerate} label="Generate PDF" />
           </div>
         </div>
       </ListFilter>

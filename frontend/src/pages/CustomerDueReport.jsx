@@ -1,7 +1,7 @@
 // frontend/src/pages/CustomerDueReport.jsx
 
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import CustomerDueReportList from '../components/lists/CustomerDueReportList';
 import { api } from '../services/api'; // <-- IMPORT API
 
@@ -44,14 +44,6 @@ export default function CustomerDueReport() {
     };
     fetchReports();
   }, []);
-
-  const location = useLocation();
-  const isDue = location.pathname.endsWith('/due');
-
-  const pageTitle = isDue ? 'Customer Due Report' : 'Customer Report';
-  const pageDescription = isDue
-    ? 'View outstanding dues for customers'
-    : 'Manage your customer reports';
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen flex flex-col">

@@ -1,29 +1,36 @@
-export default function UserModel(sequelize, DataTypes) {
-  const User = sequelize.define('User', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    name: DataTypes.STRING,
-    email: DataTypes.STRING,
-    role: {
-      type: DataTypes.ENUM('admin', 'biller'),
-      defaultValue: 'biller'
-    },
-    status: {
-      type: DataTypes.ENUM('Active', 'Inactive'),
-      defaultValue: 'Active'
-    },
-    password: DataTypes.STRING
-  }, {
-    tableName: 'users',
-    timestamps: true
-  });
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-  User.associate = function(models) {
-    User.hasMany(models.Sale, { foreignKey: 'userId' });
-  };
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  role: {
+    type: DataTypes.ENUM('admin', 'biller'),
+    defaultValue: 'biller',
+  },
+  status: {
+    type: DataTypes.ENUM('Active', 'Inactive'),
+    defaultValue: 'Active',
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+}, {
+  tableName: 'users',
+  timestamps: true,
+});
 
-  return User;
-}
+export default User;

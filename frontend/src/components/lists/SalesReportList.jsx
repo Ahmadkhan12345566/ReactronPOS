@@ -12,7 +12,8 @@ import ListPagination from '../ListComponents/ListPagination';
 import DateRangePicker from '../ListComponents/DateRangePicker';
 import SelectField from '../ListComponents/SelectField';
 import GenerateButton from '../ListComponents/GenerateButton';
-import { PrinterIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { exportToPDF } from '../ListComponents/exportFunctions';
+import { PrinterIcon } from '@heroicons/react/24/outline';
 import { 
   CurrencyDollarIcon, 
   ClipboardDocumentCheckIcon, 
@@ -28,17 +29,23 @@ export default function SalesReportList({ reports }) {
   const [productFilter, setProductFilter] = useState('All');
   
   // Store options
-  const storeOptions = ['All', 'Electro Mart', 'Quantum Gadgets', 'Prime Bazaar'];
+  const storeOptions = useMemo(() => {
+    const stores = [...new Set(reports.map(report => report.store).filter(Boolean))];
+    return ['All', ...stores];
+  }, [reports]);
   
   // Product options
   const productOptions = useMemo(() => {
-    const products = [...new Set(reports.map(report => report.product.name))];
+    const products = [...new Set(reports.map(report => report.product?.name).filter(Boolean))];
     return ['All', ...products];
   }, [reports]);
 
   // Print function
   const handlePrint = () => {
     window.print();
+  };
+  const handleGenerate = () => {
+    exportToPDF(filteredData, 'sales_report');
   };
 
   // Columns configuration
@@ -105,18 +112,19 @@ export default function SalesReportList({ reports }) {
   // Filtered data
   const filteredData = useMemo(() => {
     return reports.filter(report => {
-      const passesStore   = storeFilter   === 'All' || report.store === storeFilter;
-      const passesProduct = productFilter === 'All' || report.product.name === productFilter;
-      const passesSearch  = `${report.sku} ${report.product.name} ${report.product.brand} ${report.category}`
-                            .toLowerCase()
-                            .includes(search.toLowerCase());
+      const passesStore = storeFilter === 'All' || report.store === storeFilter;
+      const passesProduct = productFilter === 'All' || report.product?.name === productFilter;
+      const passesSearch = `${report.sku || ''} ${report.product?.name || ''} ${report.product?.brand || ''} ${report.category || ''}`
+        .toLowerCase()
+        .includes(search.toLowerCase());
 
-      const reportDate = new Date(report.dueDate);
-      const from       = fromDate ? new Date(fromDate) : null;
-      const to         = toDate   ? new Date(toDate)   : null;
+      const reportDateValue = report.dueDate || report.date;
+      const reportDate = reportDateValue ? new Date(reportDateValue) : null;
+      const from = fromDate ? new Date(fromDate) : null;
+      const to = toDate ? new Date(toDate) : null;
 
-      const passesFrom = from ? reportDate >= from : true;
-      const passesTo   = to   ? reportDate <= to   : true;
+      const passesFrom = from ? (reportDate ? reportDate >= from : false) : true;
+      const passesTo = to ? (reportDate ? reportDate <= to : false) : true;
 
       return passesStore && passesProduct && passesSearch && passesFrom && passesTo;
     });
@@ -134,7 +142,6 @@ export default function SalesReportList({ reports }) {
   const {
     table,
     controlButtons,
-    primaryButtons,
     emptyState
   } = useUI({
     moduleName: 'sales reports',
@@ -155,15 +162,10 @@ export default function SalesReportList({ reports }) {
   // Add custom buttons to controlButtons
   const customControlButtons = [
     ...controlButtons,
-    { 
+    {
       icon: <PrinterIcon className="w-5 h-5" />,
       onClick: handlePrint,
       title: 'Print'
-    },
-    { 
-      icon: <ChevronUpIcon className="w-5 h-5" />,
-      onClick: () => console.log('Chevron clicked'),
-      title: 'More options'
     }
   ];
 
@@ -222,7 +224,7 @@ export default function SalesReportList({ reports }) {
             colClass="md:col-span-3"
           />
 
-          <GenerateButton onClick={() => console.log('Generated')} />
+          <GenerateButton onClick={handleGenerate} label="Generate PDF" />
         </div>
       </ListFilter>
       

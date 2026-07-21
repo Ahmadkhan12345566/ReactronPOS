@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { usePos } from '../context/PosContext'; 
+import { usePos } from '../hooks/usePos'; 
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   CubeIcon,
@@ -145,7 +145,7 @@ const NavBar = () => {
       icon: UserIcon,
       items: currentUser
         ? [
-            { name: 'Billers', path: '/billers' },
+            ...(currentUser.role === 'admin' ? [{ name: 'Billers', path: '/billers' }] : []),
             { name: 'Sign Out', onClick: handleLogout, icon: ArrowLeftOnRectangleIcon },
           ]
         : [
@@ -154,6 +154,8 @@ const NavBar = () => {
           ],
     },
   };
+
+  
 
   const navLinks = [
     { name: 'Dashboard', path: '/', icon: HomeIcon },
@@ -164,7 +166,6 @@ const NavBar = () => {
     { name: 'POS', path: '/pos', icon: CreditCardIcon },
     navGroups.account,
   ];
-
   return (
     <nav className="bg-gray-900 text-white shadow-md">
       <div className="max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between">

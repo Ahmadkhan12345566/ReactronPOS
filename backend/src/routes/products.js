@@ -1,53 +1,135 @@
 // routes/products.js
 import express from 'express';
-import { models, sequelize } from '../models/index.js';
+import { Op } from 'sequelize';
+import sequelize from '../config/database.js';
+import { toObjectWithId } from '../utils/transform.js';
+import ExpressError from '../utils/ExpressError.js';
+import {
+  Product,
+  ProductVariant,
+  Inventory,
+  Category,
+  Brand,
+  Unit,
+  User,
+} from '../models/index.js';
+import { authenticateToken } from '../middleware/auth.js';
+import isAdmin from '../middleware/admin.js';
+import { isValidId } from '../utils/validation.js';
 
 const router = express.Router();
 
-// GET /products - include variants + inventories, return aggregated qty and product image
-router.get('/', async (req, res) => {
-  try {
-    const products = await models.Product.findAll({
-      include: [
-        { model: models.Category, attributes: ['name'] },
-        { model: models.Brand, attributes: ['name'] },
-        { model: models.Unit, attributes: ['name'] },
-        { model: models.User, attributes: ['name'] },
-        { 
-          model: models.ProductVariant,
-          include: [{
-            model: models.Inventory,
-            required: false
-      }]
-        }
-      ]
-    });
+const toNumberOrNull = (value) => {
+  if (value === '' || value === undefined || value === null) return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+};
 
-    const transformedProducts = products.map(product => {
-      const variants = product.ProductVariants || [];
-      const firstVariant = variants[0] || null;
+const toNumber = (value, fallback = 0) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+};
 
-      // aggregate all inventory qty across variants & warehouses
-      let totalQty = 0;
-      variants.forEach(v => {
-        (v.Inventories || []).forEach(inv => {
-          totalQty += Number(inv.qty || 0);
-        });
-      });
+const buildProductInclude = (storeId) => {
+  const inventoryInclude = {
+    model: Inventory,
+    as: 'inventories',
+    required: false,
+  };
 
+  if (storeId) {
+    inventoryInclude.where = { storeId: Number(storeId) };
+  }
+
+  return [
+    { model: Category, as: 'category', attributes: ['id', 'name'] },
+    { model: Brand, as: 'brand', attributes: ['id', 'name'] },
+    { model: Unit, as: 'unit', attributes: ['id', 'name'] },
+    { model: User, as: 'createdByUser', attributes: ['id', 'name'] },
+    {
+      model: ProductVariant,
+      as: 'ProductVariants',
+      include: [inventoryInclude],
+    },
+  ];
+};
+
+const buildProductResponse = (product, storeId) => {
+  if (!product) return null;
+  const productData = toObjectWithId(product);
+
+  const variants = (productData.ProductVariants || [])
+    .map((variant) => {
+      const inventories = variant.inventories || [];
+      const variantQty = inventories.reduce((sum, inv) => sum + Number(inv.qty || 0), 0);
       return {
-        id: product.id,
-        name: product.name,
-        category: product.Category ? product.Category.name : '',
-        brand: product.Brand ? product.Brand.name : '',
-        price: firstVariant ? Number(firstVariant.price || 0) : Number(product.price || 0),
-        unit: product.Unit ? product.Unit.name : '',
-        qty: totalQty,
-        image: product.image || null,
-        ProductVariants: variants,
-        createdBy: product.User ? product.User.name : 'Unknown'
+        ...variant,
+        id: variant.id,
+        qty: variantQty,
+        Inventories: inventories,
+        inventories,
       };
+    })
+    .filter((variant) => {
+      if (!storeId) return true;
+      return (variant.inventories || []).length > 0;
     });
+
+  if (storeId && variants.length === 0) {
+    return null;
+  }
+
+  const totalQty = variants.reduce((sum, variant) => sum + Number(variant.qty || 0), 0);
+
+  const firstVariant = variants[0] || null;
+  const categoryId = productData.category?.id ?? productData.categoryId ?? null;
+  const brandId = productData.brand?.id ?? productData.brandId ?? null;
+  const unitId = productData.unit?.id ?? productData.unitId ?? null;
+  const subCategoryId = productData.subCategoryId ?? null;
+  const supplierId = productData.supplierId ?? null;
+  const createdById = productData.createdByUser?.id ?? productData.createdBy ?? null;
+
+  return {
+    id: productData.id,
+    name: productData.name,
+    description: productData.description || '',
+    status: productData.status || 'Active',
+    productType: productData.productType,
+    sellingType: productData.sellingType || '',
+    taxType: productData.taxType || '',
+    tax: productData.tax ?? null,
+    discountType: productData.discountType || '',
+    discountValue: productData.discountValue ?? null,
+    warranties: productData.warranties || '',
+    barcodeSymbology: productData.barcodeSymbology || '',
+    slug: productData.slug || '',
+    category: productData.category ? productData.category.name : '',
+    categoryId,
+    subCategoryId,
+    brand: productData.brand ? productData.brand.name : '',
+    brandId,
+    unit: productData.unit ? productData.unit.name : '',
+    unitId,
+    supplierId,
+    price: firstVariant ? Number(firstVariant.price || 0) : 0,
+    qty: totalQty,
+    image: productData.image || null,
+    createdBy: productData.createdByUser ? productData.createdByUser.name : 'Unknown',
+    createdById,
+    ProductVariants: variants,
+  };
+};
+
+// GET /products
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const products = await Product.findAll({
+      include: buildProductInclude(),
+    });
+
+    const transformedProducts = products
+      .map((product) => buildProductResponse(product))
+      .filter(Boolean);
 
     res.json(transformedProducts);
   } catch (error) {
@@ -56,272 +138,332 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /products - create a new product, its variants, and inventory
-router.post('/', async (req, res) => {
+// POST /products
+router.post('/', authenticateToken, isAdmin, async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const {
-      name, description, categoryId, subCategoryId, brandId, unitId,
-      productType, taxType, tax, createdBy, discountType, discountValue,
+      name, status, description, categoryId, subCategoryId, brandId, unitId,
+      productType, taxType, tax, discountType, discountValue,
       warranties, barcodeSymbology, sellingType, image, supplierId, slug,
-      // Single product fields
-      sku, itemBarcode, price, quantity, quantityAlert, warehouseId
+      sku, itemBarcode, price, cost, weight, quantity, quantityAlert, storeId,
+      variants,
     } = req.body;
 
-    // --- FIX FOR OPTIONAL FIELDS (Priority 5) ---
-    // Helper function to convert empty strings to null for numeric/optional fields
-    const toNull = (val) => (val === '' || val === undefined ? null : val);
+    if (!name || !name.trim()) {
+      throw new ExpressError('Product name is required.', 400);
+    }
 
-    // Create the product
-    const product = await models.Product.create({
-      name,
-      description: toNull(description),
-      categoryId: toNull(categoryId),
-      subCategoryId: toNull(subCategoryId),
-      brandId: toNull(brandId),
-      unitId: toNull(unitId),
+    if (!productType || !['single', 'variable'].includes(productType)) {
+      throw new ExpressError('Invalid product type.', 400);
+    }
+
+    const productData = {
+      name: name.trim(),
+      status: status || 'Active',
+      description: description || null,
+      categoryId: toNumberOrNull(categoryId),
+      subCategoryId: toNumberOrNull(subCategoryId),
+      brandId: toNumberOrNull(brandId),
+      unitId: toNumberOrNull(unitId),
       productType,
-      taxType: toNull(taxType),
-      tax: toNull(tax),
-      createdBy: toNull(createdBy),
-      discountType: toNull(discountType),
-      discountValue: toNull(discountValue),
-      warranties: toNull(warranties),
-      barcodeSymbology: toNull(barcodeSymbology),
-      sellingType: toNull(sellingType),
-      image: toNull(image),
-      supplierId: toNull(supplierId),
-      slug: toNull(slug),
-    }, { transaction });
+      taxType: taxType || null,
+      tax: toNumberOrNull(tax),
+      createdBy: Number(req.user.userId),
+      discountType: discountType || null,
+      discountValue: toNumberOrNull(discountValue),
+      warranties: warranties || null,
+      barcodeSymbology: barcodeSymbology || null,
+      sellingType: sellingType || null,
+      image: image || null,
+      supplierId: toNumberOrNull(supplierId),
+      slug: slug || null,
+    };
 
-    // --- FIX FOR SINGLE PRODUCT (Priority 4) ---
+    const product = await Product.create(productData, { transaction });
+
     if (productType === 'single') {
-      // Handle as a single product with one variant
-      if (!sku || !price || !quantity || !warehouseId) {
-        throw new Error('Missing required fields for single product: sku, price, quantity, warehouseId');
+      const skuValue = typeof sku === 'string' ? sku.trim() : sku;
+      const priceValue = toNumberOrNull(price);
+      const quantityValue = toNumberOrNull(quantity);
+
+      if (!skuValue || priceValue === null || quantityValue === null || !storeId) {
+        throw new Error('Missing required fields for single product: sku, price, quantity, storeId');
       }
 
-      // 1. Create the ProductVariant
-      const variant = await models.ProductVariant.create({
+      if (!isValidId(storeId)) {
+        throw new ExpressError('Valid storeId is required.', 400);
+      }
+
+      const variantData = {
         productId: product.id,
-        sku: sku,
-        itemBarcode: toNull(itemBarcode),
-        price: parseFloat(price),
-        cost: 0,
-        weight: 0,
-        attributes: {},
-        expiryDate: toNull(req.body.expiryDate),
-        manufacturedDate: toNull(req.body.manufacturedDate),
-      }, { transaction });
+        sku: skuValue,
+        itemBarcode: itemBarcode || null,
+        price: priceValue,
+        cost: toNumber(cost),
+        weight: toNumber(weight),
+        createdBy: Number(req.user.userId),
+      };
+      const variant = await ProductVariant.create(variantData, { transaction });
 
-      // 2. Create the Inventory entry
-      await models.Inventory.create({
+      const inventoryData = {
         variantId: variant.id,
-        warehouseId: parseInt(warehouseId),
-        qty: parseInt(quantity),
-        quantityAlert: toNull(quantityAlert) || 0,
-      }, { transaction });
-
+        storeId: Number(storeId),
+        qty: parseInt(quantityValue, 10),
+        quantityAlert: toNumber(quantityAlert),
+      };
+      await Inventory.create(inventoryData, { transaction });
     } else if (productType === 'variable') {
-      // Handle as a variable product (existing logic)
-      const { variants } = req.body;
       if (!variants || !Array.isArray(variants) || variants.length === 0) {
         throw new Error('Variable product must have at least one variant.');
       }
 
       for (const v of variants) {
-        // 1. Create the ProductVariant
-        const variant = await models.ProductVariant.create({
+        const variantData = {
           productId: product.id,
           sku: v.sku,
-          itemBarcode: toNull(v.itemBarcode),
-          price: parseFloat(v.price) || 0,
-          cost: toNull(v.cost) || 0,
-          weight: toNull(v.weight) || 0,
+          itemBarcode: v.itemBarcode || null,
+          price: toNumber(v.price),
+          cost: toNumber(v.cost),
+          weight: toNumber(v.weight),
           attributes: v.attributes || {},
-          expiryDate: toNull(v.expiryDate),
-          manufacturedDate: toNull(v.manufacturedDate),
-        }, { transaction });
+          createdBy: Number(req.user.userId),
+        };
+        const variant = await ProductVariant.create(variantData, { transaction });
 
-        // 2. Create Inventory entries
         if (v.inventories && Array.isArray(v.inventories)) {
           for (const inv of v.inventories) {
-            await models.Inventory.create({
+            if (!isValidId(inv.storeId)) {
+              throw new ExpressError('Valid storeId is required for inventory.', 400);
+            }
+            await Inventory.create({
               variantId: variant.id,
-              warehouseId: parseInt(inv.warehouseId),
-              qty: parseInt(inv.qty) || 0,
-              quantityAlert: toNull(inv.quantityAlert) || 0,
+              storeId: Number(inv.storeId),
+              qty: parseInt(inv.qty, 10) || 0,
+              quantityAlert: toNumber(inv.quantityAlert),
             }, { transaction });
           }
         }
       }
     }
-    // --- END OF FIX ---
 
     await transaction.commit();
-    res.status(201).json(product);
+    res.status(201).json(toObjectWithId(product));
   } catch (error) {
     await transaction.rollback();
     console.error('POST /api/products error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 
-// PUT /products/:id - update product fields; optionally update/create variants + inventories
-router.put('/:id', async (req, res) => {
+// PUT /products/:id
+router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
-    const product = await models.Product.findByPk(req.params.id);
-    if (!product) return res.status(404).json({ error: 'Product not found' });
+    const productId = req.params.id;
+    if (!isValidId(productId)) {
+      throw new ExpressError('Invalid product id.', 400);
+    }
+    const { userId } = req.user;
 
-    const { variants, image } = req.body;
-
-    // Validate image if present
-    if (image && typeof image === 'string' && !image.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Invalid base64 image string' });
+    const product = await Product.findByPk(productId, { transaction });
+    if (!product) {
+      throw new Error('Product not found');
+    }
+    if (product.isLocked && product.lockedBy && product.lockedBy !== Number(userId)) {
+      await transaction.rollback();
+      return res.status(409).json({ message: 'This product is locked by another user and cannot be edited.' });
     }
 
-    // Update product fields (image is stored as base64 text)
-    await product.update(req.body);
+    const {
+      name, status, description, categoryId, subCategoryId, brandId, unitId,
+      productType, taxType, tax, discountType, discountValue,
+      warranties, barcodeSymbology, sellingType, image, supplierId, slug,
+      variants,
+    } = req.body;
 
-    // Process variants array if provided
-    if (Array.isArray(variants)) {
-      for (const v of variants) {
-        if (v.id) {
-          // update existing variant
-          const variant = await models.ProductVariant.findByPk(v.id);
-          if (!variant) continue;
-          // update allowed fields only (prevent accidental overwrite)
-          await variant.update({
-            sku: v.sku ?? variant.sku,
-            itemBarcode: v.itemBarcode ?? variant.itemBarcode,
-            price: v.price ?? variant.price,
-            cost: v.cost ?? variant.cost,
-            weight: v.weight ?? variant.weight,
-            attributes: v.attributes ?? variant.attributes,
-            expiryDate: v.expiryDate ?? variant.expiryDate,
-            manufacturedDate: v.manufacturedDate ?? variant.manufacturedDate
-          });
+    if (!name || !name.trim()) {
+      throw new ExpressError('Product name is required.', 400);
+    }
 
-          // inventories: upsert by warehouseId
-          if (Array.isArray(v.inventories)) {
-            for (const inv of v.inventories) {
-              if (!inv.warehouseId) continue;
-              const existing = await models.Inventory.findOne({ where: { variantId: variant.id, warehouseId: inv.warehouseId } });
-              if (existing) {
-                await existing.update({ qty: inv.qty ?? existing.qty, quantityAlert: inv.quantityAlert ?? existing.quantityAlert });
-              } else {
-                await models.Inventory.create({ variantId: variant.id, warehouseId: inv.warehouseId, qty: inv.qty ?? 0, quantityAlert: inv.quantityAlert ?? 0 });
-              }
-            }
+    if (!productType || !['single', 'variable'].includes(productType)) {
+      throw new ExpressError('Invalid product type.', 400);
+    }
+
+    if (!Array.isArray(variants)) {
+      throw new ExpressError('Variants must be provided as an array.', 400);
+    }
+
+    const productData = {
+      name: name.trim(),
+      status: status || product.status || 'Active',
+      description: description || null,
+      categoryId: toNumberOrNull(categoryId),
+      subCategoryId: toNumberOrNull(subCategoryId),
+      brandId: toNumberOrNull(brandId),
+      unitId: toNumberOrNull(unitId),
+      productType,
+      taxType: taxType || null,
+      tax: toNumberOrNull(tax),
+      discountType: discountType || null,
+      discountValue: toNumberOrNull(discountValue),
+      warranties: warranties || null,
+      barcodeSymbology: barcodeSymbology || null,
+      sellingType: sellingType || null,
+      image: image || null,
+      supplierId: toNumberOrNull(supplierId),
+      slug: slug || null,
+    };
+
+    await Product.update(productData, { where: { id: Number(productId) }, transaction });
+    const updatedProduct = await Product.findByPk(productId, { transaction });
+    if (!updatedProduct) {
+      throw new ExpressError('Product not found', 404);
+    }
+
+    const existingVariants = await ProductVariant.findAll({
+      where: { productId: Number(productId) },
+      transaction,
+    });
+    const existingVariantIds = existingVariants.map((v) => v.id);
+
+    const incomingVariantIds = variants
+      .map((v) => v._id || v.id)
+      .filter((id) => isValidId(id))
+      .map((id) => Number(id));
+
+    const variantsToDelete = existingVariantIds.filter((id) => !incomingVariantIds.includes(id));
+    if (variantsToDelete.length > 0) {
+      await Inventory.destroy({ where: { variantId: variantsToDelete }, transaction });
+      await ProductVariant.destroy({ where: { id: variantsToDelete }, transaction });
+    }
+
+    for (const v of variants) {
+      const variantData = {
+        productId: updatedProduct.id,
+        sku: v.sku,
+        itemBarcode: v.itemBarcode || null,
+        price: toNumber(v.price),
+        cost: toNumber(v.cost),
+        weight: toNumber(v.weight),
+        attributes: v.attributes || {},
+      };
+
+      let savedVariant;
+      const variantId = v._id || v.id;
+      if (variantId && isValidId(variantId)) {
+        await ProductVariant.update(variantData, { where: { id: Number(variantId) }, transaction });
+        savedVariant = await ProductVariant.findByPk(variantId, { transaction });
+      } else {
+        savedVariant = await ProductVariant.create(
+          { ...variantData, createdBy: Number(userId) },
+          { transaction }
+        );
+      }
+
+      if (!savedVariant) {
+        throw new Error('Failed to save variant');
+      }
+
+      if (v.inventories && Array.isArray(v.inventories)) {
+        await Inventory.destroy({ where: { variantId: savedVariant.id }, transaction });
+        for (const inv of v.inventories) {
+          if (!isValidId(inv.storeId)) {
+            throw new ExpressError('Valid storeId is required for inventory.', 400);
           }
-        } else {
-          // create new variant
-          const newVariant = await models.ProductVariant.create({
-            productId: product.id,
-            sku: v.sku || null,
-            itemBarcode: v.itemBarcode || null,
-            price: v.price || null,
-            cost: v.cost ?? 0.00,
-            weight: v.weight ?? 0.00,
-            attributes: v.attributes ?? null,
-            expiryDate: v.expiryDate ?? null,
-            manufacturedDate: v.manufacturedDate ?? null
-          });
-
-          if (Array.isArray(v.inventories)) {
-            for (const inv of v.inventories) {
-              if (!inv.warehouseId) continue;
-              await models.Inventory.create({
-                variantId: newVariant.id,
-                warehouseId: inv.warehouseId,
-                qty: inv.qty ?? 0,
-                quantityAlert: inv.quantityAlert ?? 0
-              });
-            }
-          }
+          await Inventory.create({
+            variantId: savedVariant.id,
+            storeId: Number(inv.storeId),
+            qty: parseInt(inv.qty, 10) || 0,
+            quantityAlert: toNumber(inv.quantityAlert),
+          }, { transaction });
         }
+      } else if (productType === 'single' && v.quantity !== undefined && v.storeId) {
+        await Inventory.destroy({ where: { variantId: savedVariant.id }, transaction });
+        if (!isValidId(v.storeId)) {
+          throw new ExpressError('Valid storeId is required for inventory.', 400);
+        }
+        await Inventory.create({
+          variantId: savedVariant.id,
+          storeId: Number(v.storeId),
+          qty: parseInt(v.quantity, 10) || 0,
+          quantityAlert: toNumber(v.quantityAlert),
+        }, { transaction });
       }
     }
 
-    const updated = await models.Product.findByPk(product.id, { include: [{ model: models.ProductVariant, include: [models.Inventory] }] });
-    res.json(updated);
+    await transaction.commit();
+    res.status(200).json(toObjectWithId(updatedProduct));
   } catch (error) {
-    console.error('PUT /products/:id error:', error);
-    res.status(500).json({ error: error.message });
+    await transaction.rollback();
+    console.error('PUT /api/products/:id error:', error);
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 
 // DELETE /products/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
-    const product = await models.Product.findByPk(req.params.id);
-    if (!product) return res.status(404).json({ error: 'Product not found' });
-    await product.destroy();
+    const productId = req.params.id;
+    if (!isValidId(productId)) {
+      throw new ExpressError('Invalid product id.', 400);
+    }
+
+    const variants = await ProductVariant.findAll({
+      where: { productId: Number(productId) },
+      transaction,
+    });
+    if (variants.length > 0) {
+      const variantIds = variants.map((v) => v.id);
+      await Inventory.destroy({ where: { variantId: variantIds }, transaction });
+      await ProductVariant.destroy({ where: { productId: Number(productId) }, transaction });
+    }
+
+    const deletedCount = await Product.destroy({ where: { id: Number(productId) }, transaction });
+    if (deletedCount === 0) {
+      throw new ExpressError('Product not found', 404);
+    }
+
+    await transaction.commit();
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    await transaction.rollback();
+    console.error('DELETE /products/:id error:', error);
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 
+const populateProductDetails = async (product, storeId) => {
+  const detailedProduct = await Product.findByPk(product.id || product, {
+    include: buildProductInclude(storeId),
+  });
+  return buildProductResponse(detailedProduct, storeId);
+};
 
-
-router.get('/pos', async (req, res) => {
+// GET /products/pos
+router.get('/pos', authenticateToken, async (req, res) => {
   try {
-    const { warehouseId } = req.query;
+    const { storeId } = req.query;
+    if (!storeId) {
+      return res.status(400).json({ message: 'storeId query parameter is required.' });
+    }
+    if (!isValidId(storeId)) {
+      return res.status(400).json({ message: 'Invalid storeId.' });
+    }
 
-    // Define the inventory where clause based on the presence of a warehouseId
-    const inventoryWhereClause = warehouseId ? { warehouseId: parseInt(warehouseId) } : {};
-
-    const products = await models.Product.findAll({
+    const products = await Product.findAll({
       where: { status: 'Active' },
-      include: [
-        { model: models.Category, attributes: ['name'] },
-        { model: models.Brand, attributes: ['name'] },
-        { model: models.Unit, attributes: ['name'] },
-        { 
-          model: models.ProductVariant,
-          include: [{
-            model: models.Inventory,
-            where: inventoryWhereClause,
-            required: !!warehouseId // Make inventory required if filtering by warehouse
-          }]
-        }
-      ]
+      include: buildProductInclude(storeId),
     });
 
-    const transformedProducts = products.map(product => {
-      const variants = product.ProductVariants || [];
-      
-      // Calculate total quantity based on the (potentially filtered) inventories
-      let totalQty = 0;
-      variants.forEach(variant => {
-        if (variant.Inventories && variant.Inventories.length > 0) {
-          variant.Inventories.forEach(inventory => {
-            totalQty += parseInt(inventory.qty || 0);
-          });
-        }
-      });
-
-      // Use the first variant's price, or a default
-      const price = variants[0] ? parseFloat(variants[0].price || 0) : 0;
-
-      return {
-        id: product.id,
-        name: product.name,
-        category: product.Category ? product.Category.name : '',
-        brand: product.Brand ? product.Brand.name : '',
-        price: price,
-        unit: product.Unit ? product.Unit.name : '',
-        qty: totalQty, // This now reflects qty for the selected warehouse if provided
-        image: product.image || null,
-        createdBy: product.User ? product.User.name : 'Unknown',
-        ProductVariants: variants.map(variant => ({
-          id: variant.id,
-          price: parseFloat(variant.price || 0),
-          Inventories: variant.Inventories || []
-        }))
-      };
-    });
+    const transformedProducts = [];
+    for (const product of products) {
+      const detailedProduct = buildProductResponse(product, storeId);
+      if (detailedProduct) {
+        transformedProducts.push(detailedProduct);
+      }
+    }
 
     res.json(transformedProducts);
   } catch (error) {
@@ -329,4 +471,70 @@ router.get('/pos', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// PUT /products/:id/lock
+router.put('/:id/lock', authenticateToken, async (req, res) => {
+  const { lock, storeId } = req.body;
+  const { id } = req.params;
+  const { userId } = req.user;
+
+  try {
+    if (!isValidId(id)) {
+      return res.status(400).json({ message: 'Invalid product id.' });
+    }
+
+    const numericId = Number(id);
+    const numericUserId = Number(userId);
+
+    if (lock) {
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      const [updatedCount] = await Product.update(
+        { isLocked: true, lockedAt: new Date(), lockedBy: numericUserId },
+        {
+          where: {
+            id: numericId,
+            [Op.or]: [
+              { isLocked: false },
+              { lockedAt: { [Op.lt]: twoMinutesAgo } },
+              { lockedBy: numericUserId },
+            ],
+          },
+        }
+      );
+
+      if (updatedCount === 0) {
+        const product = await Product.findByPk(numericId);
+        if (product && product.isLocked && product.lockedBy !== numericUserId) {
+          return res.status(409).json({ message: 'Product is currently locked by another user.' });
+        }
+        return res.status(409).json({ message: 'Could not acquire lock. The product may be locked or does not exist.' });
+      }
+    } else {
+      const [updatedCount] = await Product.update(
+        { isLocked: false, lockedAt: null, lockedBy: null },
+        { where: { id: numericId, lockedBy: numericUserId } }
+      );
+
+      if (updatedCount === 0) {
+        const product = await Product.findByPk(numericId);
+        if (product && product.isLocked) {
+          return res.status(403).json({ message: 'You cannot unlock a product locked by another user.' });
+        }
+        return res.status(404).json({ message: 'Product not found or not locked by you.' });
+      }
+    }
+
+    const detailedProduct = await populateProductDetails(numericId, storeId);
+    if (!detailedProduct) {
+      const updatedProduct = await Product.findByPk(numericId);
+      return res.json(toObjectWithId(updatedProduct));
+    }
+
+    return res.json(detailedProduct);
+  } catch (error) {
+    console.error('SERVER ERROR during lock operation:', error);
+    res.status(500).json({ message: 'Server error while updating product lock.', error: error.message });
+  }
+});
+
 export default router;

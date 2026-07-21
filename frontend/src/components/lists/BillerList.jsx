@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useUI } from "../ListComponents/useUI";
 import { selectColumn, statusColumn, actionsColumn } from '../ListComponents/columnHelpers';
+import { api } from '../../services/api';
+import EditBillerForm from '../forms/EditBillerForm';
 
 // Reusable components
 import ListContainer from '../ListComponents/ListContainer';
@@ -12,48 +14,65 @@ import ListPagination from '../ListComponents/ListPagination';
 import SearchInput from '../ListComponents/SearchInput';
 import SelectFilters from '../ListComponents/SelectFilters';
 
-export default function BillerList({ Billers, setShowForm }) {
+export default function BillerList({ billers = [], setShowForm, onRefresh }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [rowSelection, setRowSelection] = useState({});
-  
+
   // Status options
   const statusOptions = useMemo(() => ['All', 'Active', 'Inactive'], []);
 
-  // Updated columns to match User model - CALL the helper functions
+  // Columns aligned with User model fields.
   const columns = [
-    selectColumn(), // ← Add parentheses to call the function
+    selectColumn(),
     {
-      id: 'name', // ← Add id property
+      id: 'name',
       accessorKey: 'name',
       header: 'Name',
       size: 150,
     },
     {
-      id: 'email', // ← Add id property
+      id: 'email',
       accessorKey: 'email',
       header: 'Email',
       size: 200,
     },
     {
-      id: 'role', // ← Add id property
+      id: 'role',
       accessorKey: 'role',
       header: 'Role',
       size: 120,
     },
-    statusColumn('status', 'Status'), // ← Call with parameters
-    actionsColumn(['view', 'edit', 'delete']) // ← Call with parameters
+    statusColumn('status', 'Status'),
+    actionsColumn(['view', 'edit', 'delete'])
   ];
 
   // Filtered data - updated to match User model fields
   const filteredData = useMemo(() => {
-    return Billers.filter(biller => 
+    return billers.filter(biller => 
       (statusFilter === 'All' || biller.status === statusFilter) &&
       `${biller.name || ''} ${biller.email || ''} ${biller.role || ''}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
-  }, [Billers, search, statusFilter]);
+  }, [billers, search, statusFilter]);
+
+  const handleDelete = async (biller) => {
+    try {
+      await api.delete(`/api/billers/${biller.id}`);
+      if (typeof onRefresh === 'function') {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error deleting biller:', error);
+    }
+  };
+
+  const actionRenderers = {
+    edit: ({ data, onClose }) => (
+      <EditBillerForm biller={data} onSaved={onRefresh} onCancel={onClose} />
+    ),
+  };
 
   // Use UI hook
   const {
@@ -68,6 +87,7 @@ export default function BillerList({ Billers, setShowForm }) {
     rowSelection,
     setRowSelection,
     onAddItem: () => setShowForm(true),
+    onRefresh,
     resetFilters: () => {
       setSearch('');
       setStatusFilter('All');
@@ -85,7 +105,7 @@ export default function BillerList({ Billers, setShowForm }) {
           <React.Fragment key={i}>{btn.element}</React.Fragment>
         ))}
       />
-      
+
       <ListFilter>
         <SearchInput search={search} setSearch={setSearch} placeholder="Search billers..." />
         <SelectFilters 
@@ -94,13 +114,15 @@ export default function BillerList({ Billers, setShowForm }) {
           statusOptions={statusOptions} 
         />
       </ListFilter>
-      
+
       <ListTable 
         table={table} 
         emptyState={emptyState}
         maxHeight={"max-h-[calc(100vh-26rem)]"}
+        handleDelete={handleDelete}
+        actionRenderers={actionRenderers}
       />
-      
+
       <ListPagination 
         table={table} 
         dataLength={filteredData.length} 

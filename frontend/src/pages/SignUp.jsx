@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { usePos } from '../context/PosContext'; // <-- Import usePos
+import { usePos } from '../hooks/usePos'; // <-- Import usePos
 import { useNavigate } from 'react-router-dom'; // <-- Import useNavigate
 
 export default function SignUp() {
   const { login } = usePos(); // <-- Get login function from context
   const navigate = useNavigate(); // <-- Get navigate function
   const [userData, setUserData] = useState({
-    name: '', email: '', password: '', role: 'biller'
+    name: '', email: '', password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null); // <-- Add error state
@@ -61,6 +61,11 @@ export default function SignUp() {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-800 max-h-[calc(100vh-25rem)] overflow-y-auto">
           <form onSubmit={handleSubmit} className="p-8">
             <div className="space-y-5">
+              {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name
@@ -106,20 +111,6 @@ export default function SignUp() {
                 />
               </div>
 
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
-                </label>
-                <select
-                  id="role"
-                  value={userData.role}
-                  onChange={(e) => setUserData({ ...userData, role: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                >
-                  <option value="biller">Biller</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
 
               <div className="flex items-center">
                 <input

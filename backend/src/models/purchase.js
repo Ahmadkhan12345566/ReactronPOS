@@ -1,27 +1,44 @@
-// models/purchase.js
-export default function PurchaseModel(sequelize, DataTypes) {
-  const Purchase = sequelize.define('Purchase', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    reference: DataTypes.STRING,
-    date: DataTypes.DATE,
-    status: DataTypes.STRING,
-    payment_status: DataTypes.ENUM('Paid', 'Unpaid', 'Overdue'),
-    total: DataTypes.DECIMAL(10, 2),
-    paid: DataTypes.DECIMAL(10, 2),
-    due: DataTypes.DECIMAL(10, 2)
-  }, {
-    tableName: 'purchases',
-    timestamps: true
-  });
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
 
-  Purchase.associate = function(models) {
-    Purchase.belongsTo(models.Supplier, { foreignKey: 'supplierId' });
-    Purchase.hasMany(models.PurchaseItem, { foreignKey: 'purchaseId' });
-  };
+const Purchase = sequelize.define('Purchase', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  reference: {
+    type: DataTypes.STRING,
+  },
+  date: {
+    type: DataTypes.DATE,
+  },
+  status: {
+    type: DataTypes.STRING,
+  },
+  payment_status: {
+    type: DataTypes.ENUM('Paid', 'Unpaid', 'Overdue'),
+  },
+  total: {
+    type: DataTypes.FLOAT,
+  },
+  paid: {
+    type: DataTypes.FLOAT,
+  },
+  due: {
+    type: DataTypes.FLOAT,
+  },
+  supplierId: {
+    type: DataTypes.INTEGER,
+    field: 'supplier',
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+}, {
+  tableName: 'purchases',
+  timestamps: true,
+});
 
-  return Purchase;
-}
+export default Purchase;

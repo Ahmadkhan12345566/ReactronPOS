@@ -1,38 +1,30 @@
 import express from 'express';
-import { models } from '../models/index.js';
+import { Sale, Customer } from '../models/index.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // GET /invoices - get all invoices (transformed from sales)
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const sales = await models.Sale.findAll({
-      include: [
-        { 
-          model: models.Customer,
-          attributes: ['id', 'name', 'email', 'phone', 'image']
-        },
-        {
-          model: models.OrderItem,
-          include: [models.Product]
-        }
-      ],
-      order: [['createdAt', 'DESC']]
+    const sales = await Sale.findAll({
+      include: [{ model: Customer, as: 'customer', attributes: ['id', 'name', 'email', 'phone', 'image'] }],
+      order: [['createdAt', 'DESC']],
     });
 
-    // Transform sales data to invoice format
     const invoices = sales.map(sale => ({
       id: sale.id,
       invoiceNo: sale.reference,
-      customer: {
-        name: sale.Customer.name,
-        avatar: sale.Customer.image
-      },
-      dueDate: new Date(sale.date).toLocaleDateString('en-GB', {
+      customer: sale.customer ? {
+        id: sale.customer.id,
+        name: sale.customer.name,
+        avatar: sale.customer.image
+      } : { id: null, name: 'N/A', avatar: '' },
+      dueDate: sale.date ? new Date(sale.date).toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'
-      }),
+      }) : null,
       amount: sale.total,
       paid: sale.paid,
       amountDue: sale.due,

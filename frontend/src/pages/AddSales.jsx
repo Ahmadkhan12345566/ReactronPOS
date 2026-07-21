@@ -3,7 +3,7 @@ import Accordion from '../components/forms/Accordion';
 import PageHeader from '../components/forms/PageHeader';
 import FormFooter from '../components/forms/FormFooter';
 import { useNavigate } from 'react-router-dom';
-import { usePos } from '../context/PosContext';
+import { usePos } from '../hooks/usePos';
 import { api } from '../services/api';
 import {
   ArrowPathIcon,
@@ -17,6 +17,8 @@ import {
 const AddSales = () => {
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [storeId, setStoreId] = useState('');
   const [orderItems, setOrderItems] = useState([]);
   const { currentUser } = usePos();
   const [accordion, setAccordion] = useState({
@@ -30,12 +32,17 @@ const AddSales = () => {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [customersResponse, productsResponse] = await Promise.all([
+        const [customersResponse, productsResponse, storesResponse] = await Promise.all([
           api.get('/api/customers'),
-          api.get('/api/products')
+          api.get('/api/products'),
+          api.get('/api/stores')
         ]);
         setCustomers(customersResponse);
         setProducts(productsResponse);
+        setStores(storesResponse);
+        if (storesResponse && storesResponse.length > 0) {
+          setStoreId((prev) => prev || storesResponse[0].id);
+        }
       } catch (error) {
         console.error('Error fetching options:', error);
       }
@@ -48,74 +55,80 @@ const AddSales = () => {
     return `REF${randomNumber}`;
   };
 
-  // Update the handleSubmit function
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
-    
-    // Prepare order items
-    const items = [];
-    let subtotal = 0;
-    
-    orderItems.forEach((item, index) => {
-      const quantity = parseFloat(data[`quantity_${index}`]) || 0;
-      const unitPrice = parseFloat(data[`unitPrice_${index}`]) || 0;
-      const total = quantity * unitPrice;
+    try {
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
       
-      items.push({
-        productId: item.productId,
-        quantity: quantity,
-        unitPrice: unitPrice,
-        total: total
+      if (!currentUser || !currentUser.id) throw new Error('Current user ID not found');
+
+      const resolvedStoreId = data.storeId || storeId;
+      if (!resolvedStoreId) {
+        throw new Error('Store is required');
+      }
+
+      const items = orderItems.map((item) => {
+        const quantity = Number(item.quantity) || 0;
+        const unitPrice = Number(item.unitPrice) || 0;
+        return {
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity,
+          unitPrice,
+          total: quantity * unitPrice
+        };
       });
+
+      if (items.length === 0 || items.some(item => !item.productId || !item.variantId)) {
+        throw new Error('Each order item must include a product and variant.');
+      }
       
-      subtotal += total;
-    });
-    
-    // Calculate totals
-    const discount = parseFloat(data.discount) || 0;
-    const tax = parseFloat(data.tax) || 0;
-    const shipping = parseFloat(data.shipping) || 0;
-    const total = subtotal - discount + tax + shipping;
-    const paid = parseFloat(data.paid) || 0;
-    const due = total - paid;
-    
-    const saleData = {
-      reference: data.reference,
-      date: data.date || new Date().toISOString().split('T')[0],
-      status: data.status || 'Pending',
-      payment_status: data.payment_status || 'Unpaid',
-      payment_method: data.payment_method || '',
-      subtotal: subtotal,
-      discount: discount,
-      tax: tax,
-      shipping: shipping,
-      total: total,
-      paid: paid,
-      due: due,
-      note: data.note || '',
-      customerId: data.customerId,
-      userId: currentUser.id,
-      orderItems: items
-    };
-    
-    await api.post('/api/sales', saleData);
-    navigate('/sales');
-  } catch (error) {
-    console.error('Error creating sale:', error);
-  }
-};
+      const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+      const discount = parseFloat(data.discount) || 0;
+      const tax = parseFloat(data.tax) || 0;
+      const shipping = parseFloat(data.shipping) || 0;
+      const total = subtotal - discount + tax + shipping;
+      const paid = parseFloat(data.paid) || 0;
+      const due = total - paid;
+      
+      const saleData = {
+        reference: data.reference,
+        date: data.date || new Date().toISOString().split('T')[0],
+        status: data.status || 'Pending',
+        payment_status: data.payment_status || 'Unpaid',
+        payment_method: data.payment_method || '',
+        subtotal: subtotal,
+        discount: discount,
+        tax: tax,
+        shipping: shipping,
+        total: total,
+        paid: paid,
+        due: due,
+        note: data.note || '',
+        customerId: data.customerId,
+        storeId: resolvedStoreId,
+        orderItems: items
+      };
+      
+      await api.post('/api/sales', saleData);
+      navigate('/sales');
+    } catch (error) {
+      console.error('Error creating sale:', error);
+    }
+  };
 
   const toggleAccordion = (section) => {
     setAccordion(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const getProductVariants = (productId) => {
+    const product = products.find(p => p.id === productId);
+    return product?.ProductVariants || [];
   };
 
   const addOrderItem = () => {
@@ -130,7 +143,28 @@ const handleSubmit = async (e) => {
 
   const updateOrderItem = (index, field, value) => {
     const newItems = [...orderItems];
-    newItems[index][field] = value;
+    if (field === 'quantity' || field === 'unitPrice') {
+      newItems[index][field] = Number(value);
+    } else {
+      newItems[index][field] = value;
+    }
+
+    if (field === 'productId') {
+      const variants = getProductVariants(value);
+      const firstVariant = variants[0];
+      newItems[index].variantId = firstVariant?.id || '';
+      if (firstVariant) {
+        newItems[index].unitPrice = Number(firstVariant.price) || 0;
+      }
+    }
+
+    if (field === 'variantId') {
+      const variants = getProductVariants(newItems[index].productId);
+      const selectedVariant = variants.find((variant) => String(variant.id) === String(value));
+      if (selectedVariant) {
+        newItems[index].unitPrice = Number(selectedVariant.price) || 0;
+      }
+    }
     setOrderItems(newItems);
   };
 
@@ -214,6 +248,24 @@ const handleSubmit = async (e) => {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Store <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="storeId"
+                  className="w-full px-3 py-2 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  value={storeId}
+                  onChange={(e) => setStoreId(e.target.value)}
+                  required
+                >
+                  <option value="">Select Store</option>
+                  {stores.map(store => (
+                    <option key={store.id} value={store.id}>{store.name}</option>
+                  ))}
+                </select>
+              </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -265,6 +317,7 @@ const handleSubmit = async (e) => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
@@ -272,61 +325,86 @@ const handleSubmit = async (e) => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {orderItems.map((item, index) => (
-                      <tr key={index}>
-                        <td className="px-4 py-3">
-                          <select 
-                            name={`productId_${index}`}
-                            className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
-                            value={item.productId}
-                            onChange={(e) => updateOrderItem(index, 'productId', e.target.value)}
-                            required
-                          >
-                            <option value="">Select Product</option>
-                            {products.map(product => (
-                              <option key={product.id} value={product.id}>{product.name}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          <input 
-                            name={`quantity_${index}`}
-                            type="number" 
-                            className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
-                            min="1"
-                            defaultValue="1"
-                            required
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input 
-                            name={`unitPrice_${index}`}
-                            type="number" 
-                            className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
-                            step="0.01"
-                            min="0"
-                            required
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input 
-                            type="text" 
-                            className="w-full px-2 py-1 border border-gray-600 rounded bg-gray-100"
-                            readOnly
-                            value={(item.quantity * item.unitPrice).toFixed(2)}
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <button 
-                            type="button" 
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
-                            onClick={() => removeOrderItem(index)}
-                          >
-                            <XMarkIcon className="w-5 h-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {orderItems.map((item, index) => {
+                      const variants = getProductVariants(item.productId);
+                      return (
+                        <tr key={index}>
+                          <td className="px-4 py-3">
+                            <select 
+                              name={`productId_${index}`}
+                              className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
+                              value={item.productId}
+                              onChange={(e) => updateOrderItem(index, 'productId', e.target.value)}
+                              required
+                            >
+                              <option value="">Select Product</option>
+                              {products.map(product => (
+                                <option key={product.id} value={product.id}>{product.name}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <select 
+                              name={`variantId_${index}`}
+                              className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
+                              value={item.variantId}
+                              onChange={(e) => updateOrderItem(index, 'variantId', e.target.value)}
+                              required
+                              disabled={!item.productId || variants.length === 0}
+                            >
+                              <option value="">Select Variant</option>
+                              {variants.map(variant => (
+                                <option key={variant.id} value={variant.id}>
+                                  {variant.sku || `Variant ${variant.id}`} ({variant.price})
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              name={`quantity_${index}`}
+                              type="number" 
+                              className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateOrderItem(index, 'quantity', e.target.value)}
+                              required
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              name={`unitPrice_${index}`}
+                              type="number" 
+                              className="w-full px-2 py-1 border border-gray-600 rounded focus:ring-blue-500 focus:border-blue-500"
+                              step="0.01"
+                              min="0"
+                              value={item.unitPrice}
+                              onChange={(e) => updateOrderItem(index, 'unitPrice', e.target.value)}
+                              required
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              type="text" 
+                              className="w-full px-2 py-1 border border-gray-600 rounded bg-gray-100"
+                              readOnly
+                              value={(
+                                (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+                              ).toFixed(2)}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <button 
+                              type="button" 
+                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                              onClick={() => removeOrderItem(index)}
+                            >
+                              <XMarkIcon className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

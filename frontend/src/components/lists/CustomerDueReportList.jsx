@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useUI } from "../ListComponents/useUI";
-import { indexColumn, statusColumn } from '../ListComponents/columnHelpers';
+import { indexColumn } from '../ListComponents/columnHelpers';
 import { PrinterIcon } from '@heroicons/react/24/outline';
 
 // Reusable components
@@ -13,6 +13,7 @@ import ListPagination from '../ListComponents/ListPagination';
 import DateRangePicker from '../ListComponents/DateRangePicker';
 import SelectField from '../ListComponents/SelectField';
 import GenerateButton from '../ListComponents/GenerateButton';
+import { exportToPDF } from '../ListComponents/exportFunctions';
 
 export default function CustomerDueReportList({ reports }) {
   const [search, setSearch] = useState('');
@@ -21,6 +22,9 @@ export default function CustomerDueReportList({ reports }) {
   const [customerFilter, setCustomerFilter] = useState('All');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('All');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
+  const handleGenerate = () => {
+    exportToPDF(filteredData, 'customer_due_report');
+  };
   
   // Customer options
   const customerOptions = useMemo(() => {
@@ -126,7 +130,6 @@ export default function CustomerDueReportList({ reports }) {
   const {
     table,
     controlButtons,
-    primaryButtons,
     emptyState
   } = useUI({
     moduleName: 'customer due reports',
@@ -204,7 +207,7 @@ export default function CustomerDueReportList({ reports }) {
           colClass="md:col-span-2"
         />
 
-        <GenerateButton onClick={() => console.log('Generated')} />
+        <GenerateButton onClick={handleGenerate} label="Generate PDF" />
       </div>
     </ListFilter>
       

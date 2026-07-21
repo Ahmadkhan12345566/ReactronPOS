@@ -1,5 +1,4 @@
 import {
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -19,9 +18,12 @@ export const useUI = ({
   rowSelection,
   setRowSelection,
   onAddItem = false,
+  isAddDisabled = false,
   onImportItem = false,
+  onRefresh,
   onSortToggle,
-  resetFilters
+  resetFilters,
+  addLabel,
 }) => {
   const table = useReactTable({
     data: filteredData,
@@ -42,20 +44,26 @@ export const useUI = ({
     },
     {
       icon: <img src="assets/icons/excel.svg" alt="excel" className="w-5 h-5" />,
-      onClick: () => exportToExcel(filteredData, moduleName),
+      onClick: () => { void exportToExcel(filteredData, moduleName); },
       title: 'Export to Excel',
     },
-    {
-      icon: <LoopIcon className="w-5 h-5" />,
-      onClick: () => window.location.reload(),
-      title: 'Refresh',
-    },
-    {
-      icon: <ChevronUpIcon className="w-5 h-5" />,
-      onClick: onSortToggle || (() => {}),
-      title: 'Collapse',
-    },
   ];
+
+  if (typeof onRefresh === 'function') {
+    controlButtons.push({
+      icon: <LoopIcon className="w-5 h-5" />,
+      onClick: onRefresh,
+      title: 'Refresh',
+    });
+  }
+
+  if (typeof onSortToggle === 'function') {
+    controlButtons.push({
+      icon: <ChevronUpIcon className="w-5 h-5" />,
+      onClick: onSortToggle,
+      title: 'Collapse',
+    });
+  }
 
   // Build primary buttons conditionally
   const primaryButtons = [];
@@ -80,13 +88,24 @@ export const useUI = ({
   }
 
   if (typeof onAddItem === 'function') {
+    const rawName = (moduleName || '').trim();
+    const singularName = rawName.endsWith('ies')
+      ? `${rawName.slice(0, -3)}y`
+      : rawName.endsWith('s')
+        ? rawName.slice(0, -1)
+        : rawName;
+    const fallbackLabel = singularName
+      ? `${singularName.slice(0, 1).toUpperCase()}${singularName.slice(1)}`
+      : 'Item';
+
     primaryButtons.push(
       {
         element: (
           <button
             key="add"
             onClick={onAddItem}
-            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 flex items-center cursor-pointer"
+            disabled={isAddDisabled}
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 flex items-center cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -100,7 +119,7 @@ export const useUI = ({
                 clipRule="evenodd"
               />
             </svg>
-            Add {moduleName.slice(0, 1).toUpperCase() + moduleName.slice(1).toLowerCase()}
+            {addLabel || `Add ${fallbackLabel}`}
           </button>
         )
       }

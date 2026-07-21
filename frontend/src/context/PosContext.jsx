@@ -1,19 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../services/api';
+import React, { createContext, useState, useEffect } from 'react';
+import { useError } from './ErrorContext';
 
-const PosContext = createContext();
-
-export const usePos = () => {
-  const context = useContext(PosContext);
-  if (!context) {
-    throw new Error('usePos must be used within a PosProvider');
-  }
-  return context;
-};
+export const PosContext = createContext();
 
 export const PosProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { showError } = useError();
 
   useEffect(() => {
     // Check if user is logged in
@@ -22,7 +15,20 @@ export const PosProvider = ({ children }) => {
       setCurrentUser(JSON.parse(user));
     }
     setLoading(false);
-  }, []);
+
+    // Add an event listener for unauthorized events
+    const handleUnauthorized = () => {
+      showError('Your session has expired. Please sign in again.');
+      logout();
+    };
+
+    window.addEventListener('unauthorized', handleUnauthorized);
+
+    // Cleanup the event listener
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+    };
+  }, [showError]);
 
   const login = (userData) => {
     const { user, token } = userData;
