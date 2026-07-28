@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: posb-config
+  namespace: reactronpos
+data:
+  MYSQL_DATABASE: "pos_local"
+  DB_HOST: "posb-mysql"    # matches the mysql Service name below -- this is
+                            # how backend finds the DB, same role "db" played
+                            # in compose's network
+  DB_PORT: "3306"
+  DB_USER: "root"
+  DB_NAME: "pos_local"
+  NODE_ENV: "production"
+  RUN_SERVER: "true"    # REQUIRED: index.js only calls startServer() if
+                         # NODE_ENV=="development" OR RUN_SERVER=="true".
+                         # Without this, the Pod runs but Express never
+                         # starts listening -- looks "Running" in kubectl,
+                         # but is actually dead. Ask me how I know.

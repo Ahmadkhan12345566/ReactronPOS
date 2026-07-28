@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: posb-backend
+  namespace: reactronpos
+spec:
+  replicas: 1   # stateless -- safe to bump this later for redundancy,
+                # unlike the mysql Deployment above
+  selector:
+    matchLabels:
+      app: posb-backend
+  template:
+    metadata:
+      labels:
+        app: posb-backend
+    spec:
+      containers:
+        - name: backend
+          image: abdulrahmansoftware/posb-backend:v1
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef: { name: posb-config, key: DB_HOST }
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef: { name: posb-config, key: DB_PORT }
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef: { name: posb-config, key: DB_USER }
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef: { name: posb-config, key: DB_NAME }
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef: { name: posb-config, key: NODE_ENV }
+            - name: RUN_SERVER
+              valueFrom:
+                configMapKeyRef: { name: posb-config, key: RUN_SERVER }
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef: { name: posb-secrets, key: DB_PASS }
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef: { name: posb-secrets, key: JWT_SECRET }
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: posb-backend
+  namespace: reactronpos
+spec:
+  selector:
+    app: posb-backend
+  ports:
+    - port: 3000
+      targetPort: 3000
+  # ClusterIP by default -- the frontend reaches this internally.
+  # If you need to hit the API directly from outside (e.g. Postman) while
+  # testing, temporarily change type to NodePort.

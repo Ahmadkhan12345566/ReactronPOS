@@ -1,0 +1,35 @@
+# Requires an ingress controller installed on the cluster first, e.g.:
+#   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+#
+# Replace "posb.yourdomain.com" with your real domain (or the cluster's
+# IP/nip.io hostname while testing -- e.g. posb.203.0.113.10.nip.io)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: posb-ingress
+  namespace: reactronpos
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"   # flip to "true" once you have TLS set up
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: posb.yourdomain.com
+      http:
+        paths:
+          # No rewrite-target needed: backend already expects the /api
+          # prefix itself (see index.js -- app.use('/api/products', ...)),
+          # so Ingress just passes the path through unchanged.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: posb-backend
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: posb-frontend
+                port:
+                  number: 5173

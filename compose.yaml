@@ -30,7 +30,7 @@ services:
       - DB_PASS=rootpassword
       - DB_NAME=pos_local
       - JWT_SECRET=your_super_secret_jwt_key_here
-      - NODE_ENV=production
+      - NODE_ENV=development
     depends_on:
       db:
         condition: service_healthy

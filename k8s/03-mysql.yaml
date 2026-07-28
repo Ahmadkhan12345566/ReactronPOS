@@ -1,0 +1,86 @@
+# --- Storage: replaces compose's "volumes: mysql_data:" ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: reactronpos
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# --- The database container itself ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: posb-mysql
+  namespace: reactronpos
+spec:
+  replicas: 1   # MySQL isn't clustered here -- keep this at 1. Scaling DB
+                # replicas isn't a "change the number" thing like stateless
+                # apps; it needs real replication setup, out of scope for now.
+  selector:
+    matchLabels:
+      app: posb-mysql
+  template:
+    metadata:
+      labels:
+        app: posb-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: posb-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: posb-config
+                  key: MYSQL_DATABASE
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+          # This replaces compose's healthcheck + backend's
+          # "depends_on: condition: service_healthy". The Service below
+          # won't send traffic to this Pod until this probe passes.
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+---
+# --- Stable DNS name so "backend" can find "db" -- replaces compose's
+# built-in network resolution by service name ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: posb-mysql
+  namespace: reactronpos
+spec:
+  selector:
+    app: posb-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+  # No "type:" specified -> defaults to ClusterIP, meaning only reachable
+  # from inside the cluster. Correct here -- nothing outside should ever
+  # touch the DB directly.
